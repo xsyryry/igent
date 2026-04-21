@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local data and generated artifacts
+/data/
+*.db
+*.sqlite
+tmp*/
+project/storage/sqlite/
+project/storage/chunk_previews/
+project/data/rag_index/
+project/data/chunk_previews/
+project/data/chunk_eval_reports/
+
+# RAG indexes and large source documents
+**/rag_index/
+**/*.pdf
+**/*.epub
+**/*.mobi
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

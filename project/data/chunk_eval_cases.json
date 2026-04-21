@@ -1,0 +1,65 @@
+[
+  {
+    "id": "writing_release",
+    "question": "What became available for IELTS Writing in May 2023?",
+    "source_file": "ielts-writing-band-descriptors-and-key-assessment-criteria.html",
+    "keywords": ["03 May 2023", "band descriptors", "key assessment criteria"],
+    "min_keyword_matches": 2
+  },
+  {
+    "id": "writing_review_reason",
+    "question": "Why were the IELTS Writing assessment criteria reviewed?",
+    "source_file": "ielts-writing-band-descriptors-and-key-assessment-criteria.html",
+    "keywords": ["continuous improvement", "fair and accurate results", "fit for purpose"],
+    "min_keyword_matches": 2
+  },
+  {
+    "id": "academic_practice_benefits",
+    "question": "What do the official IELTS Academic practice materials help learners do?",
+    "source_file": "academic-test-sample-questions.html",
+    "keywords": ["test format", "timed conditions", "model answers"],
+    "min_keyword_matches": 2
+  },
+  {
+    "id": "same_tests_academic_general",
+    "question": "Which IELTS tests are the same for Academic and General Training?",
+    "source_file": "academic-test-sample-questions.html",
+    "keywords": ["Listening", "Speaking", "Reading and Writing tests are different"],
+    "min_keyword_matches": 2
+  },
+  {
+    "id": "academic_reading_sources",
+    "question": "Where are texts for the Academic Reading test taken from?",
+    "source_file": "academic-test-sample-questions.html",
+    "keywords": ["books", "journals", "magazines", "newspapers"],
+    "min_keyword_matches": 3
+  },
+  {
+    "id": "reading_format_summary",
+    "question": "What are the time allowed and number of questions in IELTS Academic Reading?",
+    "source_file": "ielts-academic-format-reading.html",
+    "keywords": ["60 minutes", "40 questions"],
+    "min_keyword_matches": 2
+  },
+  {
+    "id": "reading_text_sources",
+    "question": "What kinds of materials are Academic Reading passages taken from?",
+    "source_file": "ielts-academic-format-reading.html",
+    "keywords": ["books", "journals", "magazines", "newspapers"],
+    "min_keyword_matches": 3
+  },
+  {
+    "id": "writing_task2_criteria",
+    "question": "Which four criteria are used to assess IELTS Writing Task 2?",
+    "source_file": "ielts-writing-band-descriptors.pdf",
+    "keywords": ["Task Response", "Coherence and Cohesion", "Lexical Resource", "Grammatical Range and Accuracy"],
+    "min_keyword_matches": 3
+  },
+  {
+    "id": "speaking_criteria",
+    "question": "Which four criteria are used to assess IELTS Speaking?",
+    "source_file": "ielts-speaking-band-descriptors.pdf",
+    "keywords": ["Fluency and Coherence", "Lexical Resource", "Grammatical Range and Accuracy", "Pronunciation"],
+    "min_keyword_matches": 3
+  }
+]

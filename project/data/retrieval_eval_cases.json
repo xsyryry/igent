@@ -1,0 +1,20 @@
+[
+  {
+    "case_id": "writing_task2_remote_work",
+    "prompt_text": "Many employees can now do their work from home using modern technology. However, this change may only benefit workers, not the employers. To what extent do you agree or disagree?",
+    "essay_text": "I partly disagree because remote work improves flexibility for workers, but employers can also benefit from lower office costs and wider access to talent. However, the essay needs better support and more specific examples.",
+    "expected_keywords": ["task response", "coherence", "band", "examples"]
+  },
+  {
+    "case_id": "writing_task2_crime_technology",
+    "prompt_text": "Technology is increasing the gap between rich and poor. Others think technology can reduce crime and improve quality of life. Discuss both views and give your opinion.",
+    "essay_text": "Technology can reduce some traditional crime through surveillance, but it also creates cybercrime and privacy risks. My view is that governments should combine innovation with regulation and clearer argument development.",
+    "expected_keywords": ["task response", "coherence", "develop", "academic"]
+  },
+  {
+    "case_id": "writing_task2_online_learning",
+    "prompt_text": "Some people think online learning is better than classroom learning. Discuss both views and give your opinion.",
+    "essay_text": "Online learning is convenient and flexible, but classroom teaching gives students stronger interaction and discipline. My answer is clear, but the body paragraphs need fuller explanation and stronger linking.",
+    "expected_keywords": ["task response", "cohesion", "paragraph", "improve"]
+  }
+]

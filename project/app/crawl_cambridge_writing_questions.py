@@ -1,0 +1,36 @@
+"""Maintainer CLI for crawling Cambridge IELTS writing questions."""
+
+from __future__ import annotations
+
+import argparse
+import json
+
+from project.tools.cambridge_crawler_tool import ENTRY_URL, crawl_writing_questions
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Crawl Tongzhuo Cambridge IELTS writing questions into local SQLite.")
+    parser.add_argument("--entry-url", default=ENTRY_URL)
+    parser.add_argument("--max-pages", type=int, default=80)
+    parser.add_argument("--no-json", action="store_true", help="Do not write per-question JSON mirror files.")
+    parser.add_argument("--no-images", action="store_true", help="Do not download prompt images.")
+    parser.add_argument("--insecure", action="store_true", help="Disable SSL verification for unstable target TLS.")
+    parser.add_argument("--use-local-entry", action="store_true", help="Reuse the latest saved entry HTML snapshot.")
+    parser.add_argument("--no-proxy", action="store_true", help="Ignore HTTP(S)_PROXY environment variables.")
+    args = parser.parse_args()
+
+    result = crawl_writing_questions(
+        entry_url=args.entry_url,
+        max_pages=args.max_pages,
+        save_json=not args.no_json,
+        download_images=not args.no_images,
+        verify_ssl=not args.insecure,
+        use_local_entry=args.use_local_entry,
+        use_env_proxy=not args.no_proxy,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

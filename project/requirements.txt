@@ -1,0 +1,5 @@
+langgraph>=0.2.34
+langchain-core>=0.3.0
+python-dotenv>=1.0.1
+requests>=2.32.0
+pypdf>=6.8.0
