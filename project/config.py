@@ -18,6 +18,8 @@ class AppConfig:
     rag_backend: str = "simple_local"
     db_backend: str = "mock_sqlite"
     calendar_backend: str = "mock_calendar"
+    checkpoint_backend: str = "sqlite"
+    checkpoint_sqlite_path: str = "data/langgraph_checkpoints.sqlite"
     retrieval_max_rounds: int = 3
     retrieval_max_no_progress_rounds: int = 2
     retrieval_top_k_per_round: int = 5
@@ -31,6 +33,10 @@ class AppConfig:
     llm_base_url: str = ""
     llm_model: str = ""
     chunk_llm_model: str = ""
+    memory_llm_api_key: str = ""
+    memory_llm_base_url: str = ""
+    memory_llm_model: str = ""
+    memory_llm_timeout: int = 30
     llm_timeout: int = 30
 
 
@@ -46,6 +52,8 @@ def get_config() -> AppConfig:
         rag_backend=os.getenv("RAG_BACKEND", "simple_local"),
         db_backend=os.getenv("DB_BACKEND", "mock_sqlite"),
         calendar_backend=os.getenv("CALENDAR_BACKEND", "mock_calendar"),
+        checkpoint_backend=os.getenv("LANGGRAPH_CHECKPOINT_BACKEND", "sqlite"),
+        checkpoint_sqlite_path=os.getenv("LANGGRAPH_CHECKPOINT_SQLITE_PATH", "data/langgraph_checkpoints.sqlite"),
         retrieval_max_rounds=int(os.getenv("RETRIEVAL_MAX_ROUNDS", "3")),
         retrieval_max_no_progress_rounds=int(os.getenv("RETRIEVAL_MAX_NO_PROGRESS_ROUNDS", "2")),
         retrieval_top_k_per_round=int(os.getenv("RETRIEVAL_TOP_K_PER_ROUND", "5")),
@@ -59,5 +67,9 @@ def get_config() -> AppConfig:
         llm_base_url=os.getenv("LLM_BASE_URL", "").rstrip("/"),
         llm_model=os.getenv("LLM_MODEL", ""),
         chunk_llm_model=os.getenv("CHUNK_LLM_MODEL", os.getenv("LLM_MODEL", "")),
+        memory_llm_api_key=os.getenv("MEMORY_LLM_API_KEY", os.getenv("LLM_API_KEY", "")),
+        memory_llm_base_url=os.getenv("MEMORY_LLM_BASE_URL", os.getenv("LLM_BASE_URL", "")).rstrip("/"),
+        memory_llm_model=os.getenv("MEMORY_LLM_MODEL", os.getenv("LLM_MODEL", "")),
+        memory_llm_timeout=int(os.getenv("MEMORY_LLM_TIMEOUT", os.getenv("LLM_TIMEOUT", "30"))),
         llm_timeout=int(os.getenv("LLM_TIMEOUT", "30")),
     )

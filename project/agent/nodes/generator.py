@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from project.agent.state import AgentState, RetrievedDoc
+from project.agent.nodes.tracing import trace_node
 from project.llm.client import LLMClient
 from project.prompts.generator_prompt import GENERATOR_SYSTEM_PROMPT, build_generator_user_prompt
 
@@ -222,6 +223,20 @@ def _generate_data_collection_answer(state: AgentState) -> str:
             f"- 完成状态：{pdf_result.get('completion_status')}"
         )
 
+    crawler_result = state.get("tool_results", {}).get("crawl_writing_questions")
+    if isinstance(crawler_result, dict):
+        return (
+            "剑桥雅思 Writing 真题爬取结果：\n"
+            f"- 请求 Task：{crawler_result.get('task_no') or 'Task 1 + Task 2'}\n"
+            f"- 解析数量：{crawler_result.get('parsed_count', 0)}\n"
+            f"- 写入数据库：{crawler_result.get('saved_count', 0)}\n"
+            f"- 题库根目录：{crawler_result.get('question_bank_root', '')}\n"
+            f"- 结构化 JSON：{crawler_result.get('json_dir', '')}\n"
+            f"- 图片目录：{crawler_result.get('image_dir', '')}\n"
+            f"- 原始快照：{crawler_result.get('raw_dir', '')}\n"
+            f"- 失败数：{crawler_result.get('fail_count', 0)}"
+        )
+
     if "data_collection_error_report" in plan:
         pending = state.get("study_context", {}).get("data_collection_request", {})
         return (
@@ -346,7 +361,7 @@ def _try_llm_generate(state: AgentState) -> str | None:
         user_prompt=build_generator_user_prompt(
             intent=state["intent"],
             user_input=state["user_input"],
-            context_summary=state.get("context_summary", ""),
+            answer_context=state.get("answer_context", {}),
         ),
         temperature=0.4,
         max_tokens=900,
@@ -358,6 +373,7 @@ def _try_llm_generate(state: AgentState) -> str | None:
     return cleaned or None
 
 
+@trace_node("generator")
 def generate_node(state: AgentState) -> dict[str, str]:
     """Generate a final response from the current state."""
 

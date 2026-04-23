@@ -18,13 +18,18 @@ from requests import Response
 from requests.exceptions import SSLError
 
 from project.db.models import get_connection, init_db
+from project.tools.question_bank_paths import (
+    CAMBRIDGE_IMAGE_DIR,
+    CAMBRIDGE_RAW_DIR,
+    CAMBRIDGE_RECORD_DIR,
+    CAMBRIDGE_WRITING_ROOT,
+)
 
 
 ENTRY_URL = "https://ielts.itongzhuo.com/business/ielts/student/jumpIeltsQuestionList.do?sSubjects=4&type=6&aiType=0"
-DATA_ROOT = Path(__file__).resolve().parents[2] / "data"
-RAW_DIR = DATA_ROOT / "raw" / "cambridge_writing"
-IMAGE_DIR = DATA_ROOT / "questions" / "images"
-JSON_DIR = DATA_ROOT / "questions" / "writing"
+RAW_DIR = CAMBRIDGE_RAW_DIR
+IMAGE_DIR = CAMBRIDGE_IMAGE_DIR
+JSON_DIR = CAMBRIDGE_RECORD_DIR
 REQUEST_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) IELTS-Agent-Maintainer/1.0",
     "Accept": "text/html,image/*,*/*;q=0.8",
@@ -92,6 +97,9 @@ def crawl_writing_questions(
     *,
     entry_url: str = ENTRY_URL,
     max_pages: int = 80,
+    task_no: int | None = None,
+    cambridge_book: int | None = None,
+    part_no: int | None = None,
     save_json: bool = True,
     download_images: bool = True,
     verify_ssl: bool = True,
@@ -128,6 +136,7 @@ def crawl_writing_questions(
                     entry_url=entry_url,
                     entry_html=entry_html,
                     max_items=max_pages,
+                    task_no=task_no,
                     download_images=download_images,
                     verify_ssl=verify_ssl,
                 )
@@ -154,11 +163,12 @@ def crawl_writing_questions(
                     session=session,
                     download_images=download_images,
                 )
-                if question:
+                if question and (task_no is None or question.task_no == task_no):
                     parsed.append(question)
             except Exception as exc:
                 failures.append({"url": url, "error": str(exc)})
 
+    parsed = _filter_questions(parsed, task_no=task_no, cambridge_book=cambridge_book, part_no=part_no)
     saved = _upsert_questions(parsed)
     if save_json:
         _write_json_records(parsed)
@@ -169,13 +179,34 @@ def crawl_writing_questions(
         "visited_pages": len(visited),
         "parsed_count": len(parsed),
         "saved_count": saved,
+        "task_no": task_no,
+        "cambridge_book": cambridge_book,
+        "part_no": part_no,
         "db_table": "writing_questions",
+        "question_bank_root": str(CAMBRIDGE_WRITING_ROOT),
         "raw_dir": str(RAW_DIR),
         "image_dir": str(IMAGE_DIR),
         "json_dir": str(JSON_DIR),
         "fail_count": len(failures),
         "failures": failures[:10],
     }
+
+
+def _filter_questions(
+    records: list[CambridgeWritingQuestion],
+    *,
+    task_no: int | None,
+    cambridge_book: int | None,
+    part_no: int | None,
+) -> list[CambridgeWritingQuestion]:
+    filtered = records
+    if task_no is not None:
+        filtered = [record for record in filtered if record.task_no == task_no]
+    if cambridge_book is not None:
+        filtered = [record for record in filtered if record.cambridge_book == cambridge_book]
+    if part_no is not None:
+        filtered = [record for record in filtered if record.part_no == part_no]
+    return filtered
 
 
 def _save_snapshot(url: str, html: str) -> Path:
@@ -243,6 +274,7 @@ def _crawl_api_questions(
     entry_url: str,
     entry_html: str,
     max_items: int,
+    task_no: int | None,
     download_images: bool,
     verify_ssl: bool,
 ) -> list[CambridgeWritingQuestion]:
@@ -254,19 +286,20 @@ def _crawl_api_questions(
     crawl_time = datetime.utcnow().replace(microsecond=0).isoformat()
     records: list[CambridgeWritingQuestion] = []
 
-    for task_no in (1, 2):
+    task_numbers = (task_no,) if task_no in {1, 2} else (1, 2)
+    for current_task_no in task_numbers:
         list_url = urljoin(base_url, "/business/single/stu/querySingleListWriting.do")
         list_data = _get_json(
             session,
             list_url,
             params={
-                "sPart": task_no,
+                "sPart": current_task_no,
                 "meType": "5" if me_type == "3" else me_type,
                 "answerQuestionType": ai_type,
             },
             verify_ssl=verify_ssl,
         )
-        _save_json_snapshot(f"list_task_{task_no}_{list_url}", list_data)
+        _save_json_snapshot(f"list_task_{current_task_no}_{list_url}", list_data)
         items = _extract_single_items(list_data)
         for item in items:
             if len(records) >= max_items:
@@ -280,7 +313,7 @@ def _crawl_api_questions(
             question = _parse_api_question(
                 item=item,
                 detail_data=detail_data,
-                task_no=task_no,
+                task_no=current_task_no,
                 source_url=f"{detail_url}?sId={s_id}",
                 raw_snapshot_path=str(detail_snapshot),
                 crawl_time=crawl_time,
@@ -618,7 +651,7 @@ def _upsert_questions(records: list[CambridgeWritingQuestion]) -> int:
         for record in records:
             connection.execute(
                 """
-                INSERT OR IGNORE INTO writing_questions (
+                INSERT OR REPLACE INTO writing_questions (
                     id, source_site, source_url, cambridge_book, part_no, task_no,
                     prompt_text, image_url, image_local_path, module, question_type,
                     crawl_time, parse_status, raw_snapshot_path

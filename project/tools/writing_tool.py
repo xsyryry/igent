@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 import re
 from typing import Any
 
@@ -12,10 +13,8 @@ from project.db.repository import (
     get_writing_task2_topic_by_id,
     list_writing_submissions,
     list_writing_samples,
-    list_writing_scoring_descriptors,
     save_mistake_record,
     save_writing_sample,
-    save_writing_scoring_descriptor,
     save_writing_submission,
 )
 from project.llm.client import LLMClient
@@ -30,6 +29,14 @@ from project.tools.db_tool import DEFAULT_USER_ID
 
 logger = logging.getLogger(__name__)
 WRITING_RAG_MAX_DOCS = 6
+WRITING_RAG_MAX_ROUNDS = 3
+WRITING_REVIEW_SKILL_PATH = Path(__file__).resolve().parents[1] / "agent" / "skills" / "writing_review_skill.md"
+WRITING_OFFICIAL_PROMPTS_DIR = Path(__file__).resolve().parents[1] / "prompts" / "writing_review"
+WRITING_OFFICIAL_PROMPT_FILES = {
+    "official_ielts_writing_task1_scoring_prompt": "official_ielts_writing_task1_scoring_prompt.md",
+    "official_ielts_writing_task2_scoring_prompt": "official_ielts_writing_task2_scoring_prompt.md",
+    "official_ielts_writing_key_assessment_criteria_prompt": "official_ielts_writing_key_assessment_criteria_prompt.md",
+}
 
 
 WRITING_REQUEST_KEYWORDS = (
@@ -163,23 +170,22 @@ def prepare_task2_review_context(
         }
 
     ensure_user_profile(user_id)
-    descriptors = _ensure_default_descriptors()
     samples = _ensure_reference_sample(topic)
     return {
         "success": True,
         "topic": topic,
         "reference_sample": samples[0] if samples else None,
-        "descriptors": descriptors,
+        "descriptors": [],
         "review_state": apply_retrieval_state_to_review_state({
             "active": True,
             "topic": topic,
             "essay_text": user_input,
-            "descriptors": descriptors,
+            "descriptors": [],
             "samples": samples,
         }, build_writing_review_retrieval_state(
             prompt_text=topic["prompt_text"],
             essay_text=user_input,
-            dataset_scope="writing",
+            dataset_scope="magazine",
         )),
     }
 
@@ -224,19 +230,18 @@ def finalize_task2_review(
         word_count=word_count,
         score=evaluation.get("overall_band"),
         feedback_json=evaluation,
-        source_of_truth=f"{evaluation.get('evaluation_source', 'heuristic')}+sql+rag",
+        source_of_truth=f"{evaluation.get('evaluation_source', 'heuristic')}+skill+sql+rag",
         metadata={
             "rag_backend": rag_result.get("backend"),
             "query_mode": rag_result.get("query_mode"),
             "sample_count": len(samples),
-            "descriptor_count": len(descriptors),
             "retrieval_trace": rag_result.get("retrieval_trace", []),
         },
     )
 
-    top_issue = str(evaluation.get("priority_issue") or "task_response_gap")
+    top_issue = _priority_issue_text(evaluation.get("priority_issue"))
     wrong_reason = str(evaluation.get("summary_for_memory") or evaluation.get("overall_comment") or "").strip()
-    correction_note = str(evaluation.get("revision_plan", ["建议按评分标准逐段修改。"])[0])
+    correction_note = _first_revision_action(evaluation.get("revision_plan"))
     if wrong_reason:
         save_mistake_record(
             user_id=user_id,
@@ -251,7 +256,7 @@ def finalize_task2_review(
             error_type=top_issue,
             wrong_reason=wrong_reason,
             correction_note=correction_note,
-            source_of_truth=f"{evaluation.get('evaluation_source', 'heuristic')}+sql+rag",
+            source_of_truth=f"{evaluation.get('evaluation_source', 'heuristic')}+skill+sql+rag",
             metadata={
                 "topic_id": topic["id"],
                 "band_breakdown": evaluation.get("band_breakdown", {}),
@@ -277,31 +282,6 @@ def finalize_task2_review(
         "descriptors": descriptors,
         "rag_result": rag_result,
     }
-
-
-def _ensure_default_descriptors() -> list[dict[str, Any]]:
-    descriptors = list_writing_scoring_descriptors(writing_type="task2", limit=20)
-    if descriptors:
-        return descriptors
-
-    seeds = [
-        ("task2", "Task Response", "6-7", "Addresses all parts of the question and develops a clear position with relevant support."),
-        ("task2", "Coherence and Cohesion", "6-7", "Organizes ideas logically with clear paragraphing and linking that does not feel mechanical."),
-        ("task2", "Lexical Resource", "6-7", "Uses a sufficient range of vocabulary with some flexibility and mostly appropriate word choice."),
-        ("task2", "Grammatical Range and Accuracy", "6-7", "Uses a mix of sentence structures and keeps grammar errors limited enough not to block understanding."),
-    ]
-    created = [
-        save_writing_scoring_descriptor(
-            writing_type=writing_type,
-            criterion_name=criterion_name,
-            band_level=band_level,
-            descriptor_text=descriptor_text,
-            source_label="demo_seed",
-            metadata={"seed": True},
-        )
-        for writing_type, criterion_name, band_level, descriptor_text in seeds
-    ]
-    return created
 
 
 def _ensure_reference_sample(topic: dict[str, Any]) -> list[dict[str, Any]]:
@@ -337,7 +317,7 @@ def _evaluate_essay(
     client = LLMClient.from_config()
     if client.is_configured:
         response = client.generate_text(
-            system_prompt=_build_evaluation_system_prompt(),
+            system_prompt=_build_evaluation_system_prompt(task_type=_infer_review_task_type(topic)),
             user_prompt=_build_evaluation_user_prompt(topic, essay_text, descriptors, samples, rag_result),
             temperature=0.1,
             max_tokens=1200,
@@ -350,23 +330,77 @@ def _evaluate_essay(
     return _build_heuristic_evaluation(topic, essay_text, rag_result)
 
 
-def _build_evaluation_system_prompt() -> str:
+def _build_evaluation_system_prompt(*, task_type: str = "task2") -> str:
+    skill_instructions = _load_writing_review_skill_instructions()
+    official_prompts = _load_official_scoring_prompts(task_type)
     return (
-        "You are an IELTS Writing Task 2 reviewer.\n"
+        "You are an IELTS Writing reviewer.\n"
+        f"Follow this project skill policy:\n{skill_instructions}\n\n"
+        f"You must apply these official scoring prompt modules before scoring:\n{official_prompts}\n\n"
         "Return JSON only.\n"
-        "Schema: {\n"
+        "Use this structured schema exactly:\n"
+        "{\n"
+        '  "task_type": "task1_academic | task1_general | task2",\n'
         '  "overall_band": 0.0,\n'
-        '  "overall_comment": "...",\n'
-        '  "priority_issue": "...",\n'
-        '  "summary_for_memory": "...",\n'
-        '  "band_breakdown": {"task_response": 0.0, "coherence_cohesion": 0.0, "lexical_resource": 0.0, "grammar_accuracy": 0.0},\n'
-        '  "strengths": ["..."],\n'
-        '  "issues": ["..."],\n'
-        '  "revision_plan": ["...", "..."],\n'
-        '  "language_upgrade_notes": ["..."]\n'
+        '  "band_breakdown": {"task_response_or_achievement": 0.0, "coherence_and_cohesion": 0.0, "lexical_resource": 0.0, "grammatical_range_and_accuracy": 0.0},\n'
+        '  "evidence_based_comment": {"summary": "...", "score_reason": "...", "main_limitations": ["..."]},\n'
+        '  "strengths": [{"point": "...", "evidence": "...", "criteria": ["..."]}],\n'
+        '  "issues": [{"problem": "...", "why_it_hurts_score": "...", "evidence": "...", "affected_criteria": ["..."]}],\n'
+        '  "priority_issue": {"problem": "...", "reason_for_priority": "...", "affected_criteria": ["..."], "improvement_goal": "..."},\n'
+        '  "revision_plan": [{"step": 1, "action": "...", "target_issue": "...", "expected_effect": "..."}],\n'
+        '  "language_upgrade_notes": [{"original_or_problem": "...", "suggestion": "...", "reason": "...", "support_type": "language_support | phrasing_reference | collocation_support"}],\n'
+        '  "score_evidence": {"task_response_or_achievement": {"judgement": "...", "evidence_from_essay": "...", "explanation": "..."}, "coherence_and_cohesion": {"judgement": "...", "evidence_from_essay": "...", "explanation": "..."}, "lexical_resource": {"judgement": "...", "evidence_from_essay": "...", "explanation": "..."}, "grammatical_range_and_accuracy": {"judgement": "...", "evidence_from_essay": "...", "explanation": "..."}},\n'
+        '  "confidence": "high | medium | low",\n'
+        '  "limitations": ["..."],\n'
+        '  "summary_for_memory": "..."\n'
         "}\n"
-        "Be constructive, concise, and grounded in the provided descriptors."
+        "All band scores must be numbers from 0.0 to 9.0 in 0.5 increments.\n"
+        "Be constructive, concise, and grounded in the skill scoring policy plus essay evidence."
     )
+
+
+def _load_writing_review_skill_instructions() -> str:
+    try:
+        text = WRITING_REVIEW_SKILL_PATH.read_text(encoding="utf-8").strip()
+    except OSError:
+        return "Use skill scoring policy, writing RAG evidence, and IELTS Task 2 criteria."
+    return text[:6000]
+
+
+def _load_official_scoring_prompts(task_type: str) -> str:
+    prompt_names = _official_prompt_names_for_task(task_type)
+    sections = [_load_official_prompt_file(name) for name in prompt_names]
+    return "\n\n".join(section for section in sections if section).strip()[:9000]
+
+
+def _load_official_prompt_file(prompt_name: str) -> str:
+    filename = WRITING_OFFICIAL_PROMPT_FILES.get(prompt_name)
+    if not filename:
+        return ""
+    try:
+        return (WRITING_OFFICIAL_PROMPTS_DIR / filename).read_text(encoding="utf-8").strip()
+    except OSError:
+        return f"# {prompt_name}\nOfficial prompt file is unavailable; use the skill scoring policy."
+
+
+def _official_prompt_names_for_task(task_type: str) -> list[str]:
+    normalized = task_type.lower()
+    scoring_prompt = (
+        "official_ielts_writing_task1_scoring_prompt"
+        if normalized in {"task1", "task1_academic", "task1_general"}
+        else "official_ielts_writing_task2_scoring_prompt"
+    )
+    return [scoring_prompt, "official_ielts_writing_key_assessment_criteria_prompt"]
+
+
+def _infer_review_task_type(topic: dict[str, Any]) -> str:
+    essay_type = str(topic.get("essay_type") or "").lower()
+    prompt_text = str(topic.get("prompt_text") or "").lower()
+    if "task 1" in essay_type or "task1" in essay_type or "task 1" in prompt_text:
+        if any(token in prompt_text for token in ("letter", "write a letter", "dear")):
+            return "task1_general"
+        return "task1_academic"
+    return "task2"
 
 
 def _build_evaluation_user_prompt(
@@ -376,10 +410,7 @@ def _build_evaluation_user_prompt(
     samples: list[dict[str, Any]],
     rag_result: dict[str, Any],
 ) -> str:
-    descriptor_text = "\n".join(
-        f"- {item['criterion_name']} ({item.get('band_level') or 'general'}): {item['descriptor_text']}"
-        for item in descriptors
-    )
+    del descriptors
     sample_text = "\n\n".join(
         f"{sample.get('title') or sample['sample_type']}:\n{sample['content']}"
         for sample in samples[:2]
@@ -394,9 +425,9 @@ def _build_evaluation_user_prompt(
         f"Topic ({topic.get('exam_date', 'unknown')} / {topic.get('essay_type', 'Task 2')}):\n"
         f"{topic['prompt_text']}\n\n"
         f"Student essay:\n{essay_text}\n\n"
-        f"Descriptors:\n{descriptor_text}\n\n"
+        "Scoring policy:\nUse the writing_review_skill policy from the system prompt.\n\n"
         f"Reference sample(s):\n{sample_text}\n\n"
-        f"Additional English support from retrieval:\n{rag_answer}\n\n"
+        f"External magazine RAG support for language and argument expression only:\n{rag_answer}\n\n"
         f"Retrieval trace:\n{trace_text or '- single-pass retrieval'}\n"
     )
 
@@ -417,25 +448,49 @@ def _parse_json_object(response: str | None) -> dict[str, Any] | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+def _normalize_band(value: Any, default: float) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        score = default
+    score = max(0.0, min(9.0, score))
+    return round(round(score * 2) / 2, 1)
+
+
+def _first_present(data: Any, keys: tuple[str, ...]) -> Any:
+    if not isinstance(data, dict):
+        return None
+    for key in keys:
+        if key in data and data.get(key) is not None:
+            return data.get(key)
+    return None
+
+
 def _normalize_evaluation(data: dict[str, Any], essay_text: str) -> dict[str, Any]:
-    overall_band = float(data.get("overall_band", 5.5) or 5.5)
+    overall_band = _normalize_band(data.get("overall_band"), 5.5)
     breakdown = data.get("band_breakdown", {})
+    evidence_comment = data.get("evidence_based_comment") if isinstance(data.get("evidence_based_comment"), dict) else {}
     normalized_breakdown = {
-        "task_response": float(breakdown.get("task_response", overall_band)),
-        "coherence_cohesion": float(breakdown.get("coherence_cohesion", overall_band)),
-        "lexical_resource": float(breakdown.get("lexical_resource", overall_band)),
-        "grammar_accuracy": float(breakdown.get("grammar_accuracy", overall_band)),
+        "task_response": _normalize_band(_first_present(breakdown, ("task_response", "task_response_or_achievement", "task_achievement")), overall_band),
+        "coherence_cohesion": _normalize_band(_first_present(breakdown, ("coherence_cohesion", "coherence_and_cohesion")), overall_band),
+        "lexical_resource": _normalize_band(_first_present(breakdown, ("lexical_resource",)), overall_band),
+        "grammar_accuracy": _normalize_band(_first_present(breakdown, ("grammar_accuracy", "grammatical_range_and_accuracy")), overall_band),
     }
     return {
-        "overall_band": round(overall_band, 1),
-        "overall_comment": str(data.get("overall_comment") or "").strip(),
-        "priority_issue": str(data.get("priority_issue") or "task_response_gap").strip(),
+        "task_type": str(data.get("task_type") or "").strip(),
+        "overall_band": overall_band,
+        "overall_comment": str(data.get("overall_comment") or evidence_comment.get("summary") or "").strip(),
+        "evidence_based_comment": evidence_comment,
+        "priority_issue": data.get("priority_issue") or {"problem": "task_response_gap"},
         "summary_for_memory": str(data.get("summary_for_memory") or "").strip(),
         "band_breakdown": normalized_breakdown,
-        "strengths": _normalize_str_list(data.get("strengths")),
-        "issues": _normalize_str_list(data.get("issues")),
-        "revision_plan": _normalize_str_list(data.get("revision_plan")),
-        "language_upgrade_notes": _normalize_str_list(data.get("language_upgrade_notes")),
+        "strengths": _normalize_json_list(data.get("strengths")),
+        "issues": _normalize_json_list(data.get("issues")),
+        "revision_plan": _normalize_json_list(data.get("revision_plan")),
+        "language_upgrade_notes": _normalize_json_list(data.get("language_upgrade_notes")),
+        "score_evidence": data.get("score_evidence") if isinstance(data.get("score_evidence"), dict) else {},
+        "confidence": str(data.get("confidence") or "medium").strip(),
+        "limitations": _normalize_json_list(data.get("limitations")),
         "word_count": _count_words(essay_text),
     }
 
@@ -468,10 +523,38 @@ def _build_heuristic_evaluation(topic: dict[str, Any], essay_text: str, rag_resu
     if rag_hint and "No relevant context found" not in rag_hint:
         language_note = "可参考外刊语料中的正式表达，增强论证的学术感。"
 
+    issue_items = [
+        {
+            "problem": issue,
+            "why_it_hurts_score": "该问题会削弱 Task Response 或语言表达质量。",
+            "evidence": "基于当前作文的字数、段落和论证展开情况判断。",
+            "affected_criteria": ["task_response"],
+        }
+        for issue in (issues or ["可继续加强词汇准确性和句式变化。"])
+    ]
+    strength_items = [
+        {
+            "point": strength,
+            "evidence": "基于当前作文文本表现判断。",
+            "criteria": ["task_response", "coherence_and_cohesion"],
+        }
+        for strength in (strengths or ["已经完成了一篇可批改的完整作文。"])
+    ]
+
     return {
         "overall_band": round(min(overall_band, 6.5), 1),
         "overall_comment": "整体上已经具备基本的 Task 2 回答框架，但论证深度和语言精确度还可以继续提升。",
-        "priority_issue": "task_response_gap" if issues else "language_upgrade",
+        "evidence_based_comment": {
+            "summary": "整体上已经具备基本的 Task 2 回答框架。",
+            "score_reason": "分数主要受论证展开、段落组织和语言精确度影响。",
+            "main_limitations": issues[:2],
+        },
+        "priority_issue": {
+            "problem": issues[0] if issues else "language_upgrade",
+            "reason_for_priority": "这是当前最影响提分效率的问题。",
+            "affected_criteria": ["task_response"],
+            "improvement_goal": "先把主体段论证写完整，再优化表达。",
+        },
         "summary_for_memory": issues[0] if issues else "继续加强论证展开与正式表达。",
         "band_breakdown": {
             "task_response": round(min(overall_band, 6.0), 1),
@@ -479,13 +562,54 @@ def _build_heuristic_evaluation(topic: dict[str, Any], essay_text: str, rag_resu
             "lexical_resource": round(max(5.0, overall_band - 0.3), 1),
             "grammar_accuracy": round(max(5.0, overall_band - 0.3), 1),
         },
-        "strengths": strengths or ["已经完成了一篇可批改的完整作文。"],
-        "issues": issues or ["可继续加强词汇准确性和句式变化。"],
+        "strengths": strength_items,
+        "issues": issue_items,
         "revision_plan": [
-            "先补强每个主体段的解释句和例子句。",
-            "再通读全文，统一立场并检查连接词是否自然。",
+            {
+                "step": 1,
+                "action": "先补强每个主体段的解释句和例子句。",
+                "target_issue": "argument_development",
+                "expected_effect": "提升 Task Response 的展开充分度。",
+            },
+            {
+                "step": 2,
+                "action": "再通读全文，统一立场并检查连接词是否自然。",
+                "target_issue": "coherence",
+                "expected_effect": "提升段落推进和衔接自然度。",
+            },
         ],
-        "language_upgrade_notes": [language_note],
+        "language_upgrade_notes": [
+            {
+                "original_or_problem": "当前表达仍可更正式、更具体。",
+                "suggestion": language_note,
+                "reason": "外刊 RAG 只作为语言和论证表达参考，不作为评分依据。",
+                "support_type": "language_support",
+            }
+        ],
+        "score_evidence": {
+            "task_response_or_achievement": {
+                "judgement": "论证展开仍是主要限制。",
+                "evidence_from_essay": "基于当前作文文本的字数和展开情况判断。",
+                "explanation": "解释和例子不足会限制 Task Response。",
+            },
+            "coherence_and_cohesion": {
+                "judgement": "结构基本成形但仍可更清晰。",
+                "evidence_from_essay": "基于段落数量和段落推进判断。",
+                "explanation": "段落组织影响读者理解论证路径。",
+            },
+            "lexical_resource": {
+                "judgement": "词汇可继续提高精确度。",
+                "evidence_from_essay": "基于当前文本的表达丰富度判断。",
+                "explanation": "更准确的搭配和话题词有助于提升表达质量。",
+            },
+            "grammatical_range_and_accuracy": {
+                "judgement": "句式范围和准确性仍需检查。",
+                "evidence_from_essay": "基于当前文本的句式复杂度判断。",
+                "explanation": "稳定准确的复杂句有助于提高 GRA。",
+            },
+        },
+        "confidence": "medium",
+        "limitations": [],
         "evaluation_source": "heuristic",
         "word_count": word_count,
     }
@@ -497,6 +621,40 @@ def _normalize_str_list(value: Any) -> list[str]:
     if isinstance(value, str) and value.strip():
         return [value.strip()]
     return []
+
+
+def _normalize_json_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return [item for item in value if item not in (None, "", [], {})]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    if isinstance(value, dict):
+        return [value]
+    return []
+
+
+def _priority_issue_text(value: Any) -> str:
+    if isinstance(value, dict):
+        for key in ("problem", "target_issue", "improvement_goal"):
+            text = str(value.get(key) or "").strip()
+            if text:
+                return text
+        return "task_response_gap"
+    text = str(value or "").strip()
+    return text or "task_response_gap"
+
+
+def _first_revision_action(value: Any) -> str:
+    items = _normalize_json_list(value)
+    if not items:
+        return "建议按评分标准逐段修改。"
+    first = items[0]
+    if isinstance(first, dict):
+        for key in ("action", "suggestion", "expected_effect"):
+            text = str(first.get(key) or "").strip()
+            if text:
+                return text
+    return str(first).strip()
 
 
 def _count_words(text: str) -> int:

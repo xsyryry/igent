@@ -21,6 +21,11 @@ project/storage/chunk_previews/
 project/data/rag_index/
 project/data/chunk_previews/
 project/data/chunk_eval_reports/
+rag_performance_tests/outputs/
+react_runtime_chain_tests/*_report.md
+memory_tests/*_report.txt
+memory_tests/*_nollm.txt
+memory_tests/old_report/
 
 # RAG indexes and large source documents
 **/rag_index/

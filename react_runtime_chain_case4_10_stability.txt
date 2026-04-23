@@ -1,0 +1,538 @@
+ReAct runtime 链路稳定性测试集：Case 4-10
+
+说明：
+1. 本文件仿照 case1-3，覆盖项目主要 intent / tool-chain / stop condition。
+2. 当前真实 graph 主链：
+   metrics_init -> router -> react_init -> ...ReAct loop... -> context_builder -> generator -> metrics_finalize -> memory_writer
+3. ReAct loop 标准形态：
+   reason -> action_selector -> tool_executor -> observation_compressor -> react_control
+   若第二轮 reason 判断信息足够，则：
+   reason -> action_selector -> react_control
+4. 所有 case 都建议用 checkpoint history 断言节点全链路，用 tool_results / observations / runtime_metrics 断言工具链。
+
+==================================================
+CASE 4：普通闲聊，无工具直答
+==================================================
+
+case_id: react_general_004_real
+category: no_tool_chain
+title: 普通 greeting 不应进入工具链
+
+user_inputs:
+1. hello
+
+pre_state:
+- study_context.total_turns = 0
+- tool_results = {}
+- observations = []
+
+mock_setup:
+- none
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- none
+
+forbidden_tools:
+- writing.get_random_task2_prompt
+- rag.retrieve_knowledge
+- web_search.search_web
+- db.get_user_profile
+- data.collect_data
+
+expected_state_updates:
+- intent = general_chat
+- react_active = false
+- react_max_steps = 0
+- observations.length = 0
+- tool_results 不包含业务工具结果
+- final_answer 非空
+
+expected_metrics:
+- runtime_metrics.current.task_success = true
+- runtime_metrics.current.counts.steps = 0
+- runtime_metrics.current.counts.selected_tool_calls = 0
+
+pass_criteria:
+- final_success = true
+- checkpoint chain 与 expected_checkpoint_chain 一致
+- no tool call
+
+==================================================
+CASE 5：知识问答，本地 RAG 成功链
+==================================================
+
+case_id: react_knowledge_rag_005_real
+category: knowledge_qa_chain
+title: 非时效性知识问题走 RAG，不走 web
+
+user_inputs:
+1. 雅思写作 Task 2 主体段怎么展开？
+
+pre_state:
+- retrieved_docs = []
+- tool_results = {}
+- observations = []
+
+mock_setup:
+- tool: rag.retrieve_knowledge
+- args:
+  - question = user_input
+  - query_mode = mix
+  - top_k = 5
+- returns:
+  answer: 主体段应包含 topic sentence、explanation、example、link back。
+  documents:
+    - source: writing_guide
+      title: Task 2 body paragraph
+      content: A body paragraph usually develops one controlling idea with explanation and evidence.
+      score: 0.92
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- react_control
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- rag.retrieve_knowledge
+
+forbidden_tools:
+- web_search.search_web
+- writing.get_random_task2_prompt
+- data.collect_data
+
+expected_state_updates:
+- intent = knowledge_qa
+- tool_results.rag 存在
+- retrieved_docs.length >= 1
+- observations.length = 1
+- last_observation.success = true
+- react_finish_reason = enough_information
+- final_answer 非空
+
+expected_metrics:
+- task_success = true
+- selected_tool_calls = 1
+- tool_selection_accuracy = 1.0
+- duplicate_tool_call_rate = 0
+
+pass_criteria:
+- required_tools 命中
+- forbidden_tools 未命中
+- checkpoint chain 与 expected_checkpoint_chain 一致
+
+==================================================
+CASE 6：时效性知识问题，web 失败后 fallback 到 RAG
+==================================================
+
+case_id: react_knowledge_fallback_006_real
+category: fallback_chain
+title: 最新政策类问题先 web，web 失败后 RAG fallback
+
+user_inputs:
+1. 最新 IELTS Writing Task 2 评分政策是什么？
+
+pre_state:
+- tool_results = {}
+- tool_health = {}
+- observations = []
+
+mock_setup:
+- primary tool: web_search.search_web
+- primary returns:
+  success: false
+  error: service unavailable
+- fallback tool: rag.retrieve_knowledge
+- fallback returns:
+  answer: 本地资料显示 IELTS Writing Task 2 仍按 TR/CC/LR/GRA 四项评分。
+  documents:
+    - source: local_band_descriptor
+      title: IELTS Writing Band Descriptors
+      content: Task 2 is assessed by Task Response, Coherence and Cohesion, Lexical Resource, Grammatical Range and Accuracy.
+      score: 0.88
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- react_control
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- web_search.search_web
+- rag.retrieve_knowledge
+
+forbidden_tools:
+- writing.get_random_task2_prompt
+- data.collect_data
+
+expected_state_updates:
+- intent = knowledge_qa
+- tool_results._tool_failures.length >= 1
+- tool_results._tool_fallbacks[0].from_tool = web_search.search_web
+- tool_results._tool_fallbacks[0].to_tool = rag.retrieve_knowledge
+- tool_results._tool_fallbacks[0].success = true
+- tool_results.rag 存在
+- observations.length = 2
+- react_finish_reason = enough_information
+
+expected_metrics:
+- task_success = true
+- fallback_success_rate = 1.0
+- tool_failure_recovery_rate = 1.0
+- selected_tool_calls = 2
+
+pass_criteria:
+- primary failure 被记录
+- fallback 成功
+- final_answer 带限制说明或基于本地资料回答
+
+==================================================
+CASE 7：学习计划，两步 DB 工具链
+==================================================
+
+case_id: react_study_plan_007_real
+category: multi_tool_chain
+title: 学习计划先取画像，再取计划
+
+user_inputs:
+1. 帮我制定一个雅思学习计划
+
+pre_state:
+- user_profile = {}
+- study_context.total_turns = 0
+- tool_results = {}
+
+mock_setup:
+- tool 1: db.get_user_profile
+- returns:
+  user_id: demo_user
+  current_level: 6.0
+  target_score: 7.0
+  preferred_focus: writing
+  available_hours_per_week: 8
+- tool 2: db.get_study_plan
+- returns:
+  weekly_goals:
+    - 完成 2 次 Task 2 结构训练
+    - 完成 2 次听力精听
+  daily_tasks:
+    - 背 5 个写作观点句
+    - 做 1 组听力 Section 2
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- react_control
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- db.get_user_profile
+- db.get_study_plan
+
+forbidden_tools:
+- rag.retrieve_knowledge
+- web_search.search_web
+- writing.get_random_task2_prompt
+
+expected_state_updates:
+- intent = study_plan
+- user_profile.current_level = 6.0
+- tool_results.get_study_plan 存在
+- observations.length = 2
+- react_finish_reason = enough_information
+- final_answer 包含学习计划内容
+
+expected_metrics:
+- task_success = true
+- selected_tool_calls = 2
+- average_steps_per_successful_task = 2
+- duplicate_tool_call_rate = 0
+
+pass_criteria:
+- 工具顺序为 db.get_user_profile -> db.get_study_plan
+- 不进入 RAG / web / writing 工具
+
+==================================================
+CASE 8：错题复盘，两步 DB 工具链
+==================================================
+
+case_id: react_mistake_review_008_real
+category: multi_tool_chain
+title: 非提交类错题复盘读取 profile 和 mistake records
+
+user_inputs:
+1. 帮我复盘一下最近的错题
+
+pre_state:
+- user_profile = {}
+- tool_results = {}
+- observations = []
+
+mock_setup:
+- tool 1: db.get_user_profile
+- returns:
+  user_id: demo_user
+  current_level: 6.0
+  weak_skills:
+    - writing
+    - listening
+- tool 2: db.get_mistake_records
+- returns:
+  - subject: writing
+    error_type: 观点展开不充分
+    correction_note: 主体段补 explanation 和 example
+  - subject: listening
+    error_type: 单复数漏听
+    correction_note: 注意题目前后名词形式
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- react_control
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- db.get_user_profile
+- db.get_mistake_records
+
+forbidden_tools:
+- mistake.grade_submission
+- writing.review_task2_submission
+- rag.retrieve_knowledge
+
+expected_state_updates:
+- intent = mistake_review
+- tool_results.get_mistake_records.length >= 1
+- observations.length = 2
+- react_finish_reason = enough_information
+- final_answer 包含薄弱点或错题复盘建议
+
+expected_metrics:
+- task_success = true
+- selected_tool_calls = 2
+- tool_selection_accuracy = 1.0
+
+pass_criteria:
+- 没有误判为作文提交
+- 没有调用批改工具
+
+==================================================
+CASE 9：作文提交批改，active topic 下走 review 工具
+==================================================
+
+case_id: react_writing_review_009_real
+category: writing_review_chain
+title: 已有 active topic 时，长作文输入进入批改工具
+
+user_inputs:
+1. In recent years, many people have argued that children should start school as early as possible. I partly disagree with this view because young children need time to develop emotionally before formal education. For example, if a four-year-old is forced to sit in a classroom for many hours, he may lose curiosity and confidence. However, early education can also help children build basic social skills when it is playful and age-appropriate. Therefore, I believe school should not start too early, but families can provide informal learning at home.
+
+pre_state:
+- study_context.active_writing_topic_id = task2_active_001
+- study_context.active_writing_prompt = Some people think that children should start school as early as possible...
+- writing_review_state = {}
+
+mock_setup:
+- tool: writing.review_task2_submission
+- args:
+  - topic_id = task2_active_001
+  - user_input = essay text
+- returns:
+  success: true
+  topic:
+    id: task2_active_001
+    prompt_text: Some people think that children should start school as early as possible...
+  evaluation:
+    overall_band: 6.0
+    priority_issue: task_response_gap
+    band_breakdown:
+      task_response: 6.0
+      coherence_cohesion: 6.0
+      lexical_resource: 6.0
+      grammar_accuracy: 6.0
+    strengths:
+      - position is clear
+    issues:
+      - examples need more detail
+    revision_plan:
+      - expand each body paragraph with a concrete example
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- react_control
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- writing.review_task2_submission
+
+forbidden_tools:
+- writing.get_random_task2_prompt
+- rag.retrieve_knowledge
+- web_search.search_web
+- db.get_mistake_records
+
+expected_state_updates:
+- intent = writing_practice
+- tool_results.review_task2_submission.success = true
+- observations.length = 1
+- react_finish_reason = enough_information
+- study_context.active_writing_topic_id = task2_active_001
+- final_answer 包含 overall_band 或批改反馈
+
+expected_metrics:
+- task_success = true
+- selected_tool_calls = 1
+- duplicate_tool_call_rate = 0
+
+pass_criteria:
+- 长作文输入不被当作“重新抽题”
+- 不调用 get_random_task2_prompt
+
+==================================================
+CASE 10：剑桥写作题 PDF 导出，本地题库工具链
+==================================================
+
+case_id: react_data_pdf_010_real
+category: data_collection_chain
+title: Cambridge Writing PDF 请求走 question_pdf.export_question_pdf
+
+user_inputs:
+1. 帮我导出 5 道剑桥雅思 Writing Task 2 真题 PDF
+
+pre_state:
+- tool_results = {}
+- study_context.total_turns = 0
+
+mock_setup:
+- tool: question_pdf.export_question_pdf
+- args:
+  - user_input = original user input
+- returns:
+  success: true
+  export_path: D:\Afile\igent\project\data\exports\cambridge_writing_task2.pdf
+  requested_count: 5
+  exported_count: 5
+  completion_status: complete
+
+expected_checkpoint_chain:
+- metrics_init
+- router
+- react_init
+- reason
+- action_selector
+- tool_executor
+- observation_compressor
+- react_control
+- reason
+- action_selector
+- react_control
+- context_builder
+- generator
+- metrics_finalize
+- memory_writer
+
+required_tools:
+- question_pdf.export_question_pdf
+
+forbidden_tools:
+- data.collect_data
+- cambridge_crawler.crawl_writing_questions
+- rag.retrieve_knowledge
+- web_search.search_web
+- writing.get_random_task2_prompt
+
+expected_state_updates:
+- intent = data_collection
+- tool_results.export_question_pdf.success = true
+- observations.length = 1
+- react_finish_reason = enough_information
+- final_answer 包含 export_path
+
+expected_metrics:
+- task_success = true
+- selected_tool_calls = 1
+- tool_selection_accuracy = 1.0
+
+pass_criteria:
+- 使用本地 PDF 导出工具
+- 不误触发通用 data.collect_data 或爬虫

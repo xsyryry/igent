@@ -6,6 +6,7 @@ import logging
 
 from dotenv import load_dotenv
 
+from project.agent.checkpointing import checkpoint_config
 from project.agent.graph import build_graph
 from project.agent.state import Message, StudyContext, UserProfile, build_initial_state
 from project.config import get_config
@@ -63,7 +64,7 @@ def run_cli() -> None:
                 user_profile=user_profile,
                 study_context=study_context,
             )
-            result = graph.invoke(initial_state)
+            result = graph.invoke(initial_state, config=checkpoint_config("cli-demo-user"))
 
             messages = result.get("messages", messages)
             user_profile = result.get("user_profile", user_profile)

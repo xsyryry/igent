@@ -1,0 +1,525 @@
+IELTS Writing Task 2 测试样例集
+说明：
+1. 题目直接取自你提供的文件《雅思task2不同种类9分范文》。
+2. 每道题包含三组样例：
+   - Band 9 样例：按原文件整理保留，作为高分参考样例。
+   - Band 7 样例：为测试批改系统而生成，故意保留少量中高分常见问题。
+   - Band 5 样例：为测试批改系统而生成，故意覆盖更明显的扣分点。
+3. “预期扣分点”用于帮助你验证 skill 是否能识别对应问题，不等于官方最终打分说明。
+4. 本文件中的 Band 7 / Band 5 样例均为专门构造的测试数据，不代表最佳写法。
+
+============================================================
+
+【样例 1】政府类
+
+【题目】
+Improvements in health, education and trade are essential for the development of poor nations. However, the governments of richer nations should take more responsibility for helping poor nations in such areas.
+To what extent do you agree or disagree?
+
+【Band 9 样例（按原文件整理）】
+There is clear evidence across the world that a gulf has emerged between the richest and poorest nations of the globe. The richest 1% of the world's population hold an astonishing 50% of the world's wealth. In a time of economic hardship in many parts of the world, the time has surely come for a new economic model, with a progressive form of taxation at its heart.
+
+The economist John Maynard Keynes, architect of Roosevelt's New Deal in the 1930s, advocated an economic system of tight controls on the supply of money, to ensure the fair distribution of wealth throughout society. This model was abandoned during the 1980s by governments in the western world. Following the economic crash of 2008, and the subsequent sluggish recovery experienced in many countries, it is surely time to re-evaluate the kind of economic model we elect to dominate society.
+
+Marx argued that capitalism is by its very nature exploitative. Given the widening gap between rich and poor, it is high time the economists of the world re-acquainted themselves with the German economist's magnum opus, Das Kapital. Governments must take a more interventionist approach, of the kind propounded by Marx, to tackle the alarming disparity between the richest and poorest in the world. It is no use one country adopting a socialist economic agenda; collective action across the whole world is required.
+
+Therefore, by way of conclusion, I have no doubt that the richest should shoulder a heavier economic burden, in order to alleviate the suffering of the poor, thus creating a fairer, more egalitarian society.
+
+【Band 7 样例（测试用）】
+Poor countries often struggle because they lack money, technology and stable institutions, so it is reasonable to argue that richer governments should do more to support them. I largely agree with this view, although such support should be practical and long-term rather than simply consisting of short bursts of aid.
+
+The main reason wealthy nations should help is that many poor countries cannot improve healthcare, education and trade systems on their own. Building hospitals, training teachers and upgrading ports all require huge investment. In some African countries, for example, even basic medicine is not always available in rural areas. If richer governments share funding and expertise, the effects can be significant. Better vaccination systems reduce disease, stronger schools create a more skilled population, and fairer trade access allows local businesses to grow. These are not acts of charity alone; they also make the world more stable.
+
+Another point is that rich nations have often benefited more from the current global economic system, so they have a stronger responsibility to address inequality. Multinational companies can profit from cheap labour and raw materials in developing nations, while local communities receive only limited benefits. For that reason, aid should not be limited to donations. It should also include debt relief, fairer trade rules and support for local industry. Otherwise, poorer countries may remain dependent for decades.
+
+However, assistance must be carefully designed. Some foreign aid programmes fail because money is badly managed or because donors impose solutions that do not match local needs. Therefore, richer countries should work with local governments and communities instead of treating them as passive receivers.
+
+In conclusion, I agree that wealthy governments ought to take more responsibility for helping poorer nations, but their support must focus on sustainable development rather than temporary generosity.
+
+【Band 7 预期扣分点】
+- 论证总体清楚，但例子较泛，缺少更具体的数据或案例支撑。
+- 第二段和第三段有一定重复：都在说“富国有责任帮助穷国”，展开深度略有限。
+- 词汇准确但不够灵活，表达偏稳妥，冲击高分的语言亮点不足。
+- 属于“有观点、有解释，但论证深度和例证精度略弱”的典型 7 分档测试文。
+
+【Band 5 样例（测试用）】
+I think rich countries should help poor countries because poor countries have many problems. They need money for schools, hospitals and trade, so rich countries can give them support. I agree with this opinion, but I do not think rich countries should do everything.
+
+First of all, poor countries usually do not have enough money. Because of this, people cannot get good education and medical care. If rich countries give money, these problems can become smaller. Also, rich countries are stronger and they have more experience, so they can show poor countries how to develop business and industry. This is good for everyone and it can make the world better.
+
+On the other hand, I think some poor countries also need to help themselves. If they always wait for aid, they may become dependent. Sometimes governments use money in a bad way, and then the help does not really reach normal people. So giving money is not enough and it is not always successful.
+
+In conclusion, I agree that rich nations should take more responsibility, especially in health and education. However, poor countries should also make efforts by themselves. If both sides work together, there will be more progress.
+
+【Band 5 预期扣分点】
+- 篇幅偏短，Task Response 展开不足。
+- 观点较简单，论证链短，例子缺失。
+- 连接手段单一，段落推进比较机械。
+- 词汇和句式明显偏简单，难以支撑高 LR/GRA。
+- 属于“基本回应题目，但发展不足、语言资源有限”的 5 分档测试文。
+
+============================================================
+
+
+【样例 2】旅游类
+
+【题目】
+More attention is paid to being responsible tourists in order to preserve the cultural and environmental aspects of tourist places. However, some people think it is impossible to be a 'responsible tourist' in modern society.
+To what extent do you agree or disagree?
+
+【Band 9 样例（按原文件整理）】
+Responsible tourism is a concept that has arisen only in the last few years, with the idea that all visitors to popular scenic and historical locations are respectful towards local customs and the environment threatened by an increasing number of people who demonstrate a flagrant lack of regard for an area's natural beauty, despoiling it with rubbish and so forth.
+
+Everyone shares a collective responsibility to ensure they treat the global environment with the utmost respect and care. Tragically, large numbers of tourists, both domestic and those from overseas, completely disregard regulations designed to govern behaviour in such places. This development is utterly unacceptable and must be addressed with harsh penalties for rule breakers. There is simply no excuse for this kind of errant behaviour and contemptuous attitude towards the natural environment.
+
+I do not believe for one moment that it is impossible for tourists to behave responsibly in contemporary society. We have reached a period in history of tremendous technological development and more people have access to education than ever before. For a species that gave rise to the likes of ethical and moral theorists like Hume, Kant and Sartre, we cannot abnegate responsibility for individual behaviour by making spurious arguments about large populations being too difficult to manage. A system of penalties for abusers, properly and sensibly enforced by authorities, would go some way to addressing this problem.
+
+I am in broad agreement with the first of the two statements, but unreservedly refute the second claim. It is unambiguously the case that more can be done to ensure tourists behave responsibly and that stiff penalties are the solution.
+
+【Band 7 样例（测试用）】
+Although mass tourism can damage local culture and the natural environment, I disagree with the view that being a responsible tourist is impossible in modern society. It is difficult, especially when travel has become cheap and highly commercialised, but both individuals and authorities can still reduce harm in meaningful ways.
+
+Responsible tourism is clearly achievable at the individual level. Many travellers already choose public transport, avoid littering, respect dress codes at religious sites and support local businesses rather than international chains. These actions may seem small, but when repeated by thousands of visitors they can make a considerable difference. In historical cities such as Kyoto or Florence, for instance, signs and visitor guides now explain how tourists should behave in sensitive areas. When people are informed in advance, they are more likely to act responsibly.
+
+At the same time, governments and tourist companies must admit that responsibility cannot depend only on personal morality. Popular destinations are often promoted aggressively, while little is done to control visitor numbers or waste. In that situation, even well-meaning tourists may contribute to overcrowding and pollution. Therefore, authorities should introduce clearer rules, such as limiting entry to fragile sites, charging environmental fees and punishing destructive behaviour. Travel platforms could also educate customers before their trip instead of merely advertising attractive photos.
+
+Admittedly, not every tourist will behave well, and some people continue to ignore local customs. However, this does not prove that responsible tourism is impossible. It simply shows that the system needs stronger management.
+
+In conclusion, modern tourism makes responsible behaviour more challenging, but it is still realistic. With better education and stricter regulation, tourists can enjoy destinations without destroying what makes them valuable.
+
+【Band 7 预期扣分点】
+- 立场明确，但对“为什么有人认为不可能”这一反方逻辑回应略短。
+- 例子合理但不够深入，更多是常识性说明。
+- 连接自然但略偏套路化，缺少更复杂的论证层次。
+- 属于“整体完成较好，但双边讨论深度略不均衡”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+Nowadays many people travel to many places, so being a responsible tourist is an important topic. I think it is possible to be responsible, but in modern society it is not easy.
+
+First, tourists can do some simple things. They can put rubbish in bins, follow local rules and do not damage old buildings. They can also buy local food and products, which helps local people. If tourists do these things, tourism will be better for cultural places and natural places.
+
+However, there are also many problems. Some tourists only want to take photos and have fun. They make noise, throw rubbish and sometimes wear unsuitable clothes in religious places. Also, too many tourists come to famous places because tickets are cheap and social media makes these places popular. As a result, even good tourists can create pressure on the environment.
+
+So I think responsible tourism is possible, but governments should make more rules. For example, they can fine people who damage places and they can tell tourists what to do. Hotels and travel companies should also give advice.
+
+In conclusion, I do not agree that responsible tourism is impossible. It is possible, but many people still do not do it, so stronger control is needed.
+
+【Band 5 预期扣分点】
+- 回应题目基本到位，但分析较表面。
+- 论点和例子较简单，缺少深入解释。
+- 表达重复明显，如 responsible / tourists / places 高频重复。
+- 句式比较单一，复杂句控制有限。
+- 属于“观点清楚但发展不足、语言偏简单”的 5 分档测试文。
+
+============================================================
+
+
+【样例 3】媒体类
+
+【题目】
+Today, the high sales of popular consumer goods reflect the power of advertising and not the real needs of the society in which they are sold.
+To what extent do you agree or disagree?
+
+【Band 9 样例（按原文件整理）】
+Advertising and marketing are pivotal components of the sale and distribution of goods; without attractive marketing campaigns and vivid adverts, companies would be less competitive and sell fewer products. Obviously, advertising is not the primary motivating factor behind a person's decision to purchase a product; other considerations must be taken into account.
+
+People purchase goods and services for a wide array of reasons. Necessity is the basic impulse that determines whether someone buys a specific item. Food is bought not because it is a luxury item, but because it serves a basic human need. Similarly, clothes and shelter are bought because these are the most essential components of an individual's existence. One might also argue that in today's technologically advanced society, gadgets and devices such as mobile phones, computers and the like are equally essential to one's everyday activities, particularly with regard to work.
+
+It is evident, though, that advertising has a tremendous impact on consumers' purchasing decisions in today's market-driven economy. If one takes food as an example, advertising can have a great effect on the type of food one buys. Different brands of orange juice, priced and advertised according to different strategies, will obviously occupy varying shares of the market. Advertising can go a considerable way to determining the scale of distribution and success of a product once it goes on the market.
+
+【Band 7 样例（测试用）】
+I partly agree that the popularity of many consumer goods is driven by advertising rather than genuine social needs. Advertising is extremely powerful in shaping what people want, but it would be inaccurate to say that real needs play no role at all.
+
+There is no doubt that advertising can create demand where none previously existed. Modern campaigns do more than present information; they associate products with status, beauty or success. A person may buy the newest phone not because their old one is unusable, but because advertisements suggest that owning the latest model is a sign of ambition or modernity. This is especially true for cosmetics, fashion items and luxury goods, where branding often matters more than practical value. In such cases, high sales figures reflect marketing strength more than public necessity.
+
+However, the statement becomes less convincing when we consider essential or widely useful products. Food, medicine, household appliances and digital devices are bought because they serve clear purposes in daily life. Although companies still advertise these items heavily, their sales cannot be explained by promotion alone. For example, people need laptops for work and study, regardless of how eye-catching a commercial may be. Advertising may influence which brand consumers choose, but not the underlying need to buy the item.
+
+Overall, advertising has become powerful enough to shape tastes and even create artificial desires. Nevertheless, popular consumer goods are not sold in a social vacuum. In many cases, their success reflects a combination of real need and persuasive promotion.
+
+In conclusion, I disagree with the statement in its absolute form. Advertising is a major force behind sales, but genuine needs still remain an essential part of consumer behaviour.
+
+【Band 7 预期扣分点】
+- 有清晰立场，但“社会真实需求”这一概念界定不够深入。
+- 论证比较稳妥，缺少更鲜明或更有分析力的例子。
+- 语言准确但偏常规，词汇多样性中上而非非常强。
+- 属于“部分同意类题目完成不错，但思想深度略有限”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+I think advertising is very powerful today, so I mostly agree that popular goods sell well because of ads. Many people buy things they do not really need.
+
+First, companies spend a lot of money on advertising. They put adverts on TV, phones and public places, so people see products again and again. Because of this, people may feel they need to buy new shoes, new phones or expensive drinks. In fact, sometimes their old things are still fine. This shows that advertising can change people's mind.
+
+However, I do not think all goods are sold only because of ads. Some things are really necessary, such as food, medicine and clothes. People need them in normal life, so they will buy them anyway. Advertising may help one company sell more than another company, but it does not create all needs.
+
+In conclusion, advertising is a big reason for the success of many consumer goods, especially fashionable items. But real needs are still important for some products, so the statement is not fully true.
+
+【Band 5 预期扣分点】
+- 观点较清楚，但发展不充分。
+- 例子泛泛，没有具体分析广告如何影响不同商品。
+- 段落结构简单，论证链较短。
+- 词汇和句式范围有限，重复较多。
+- 属于“有基本回应，但论证与语言资源偏弱”的 5 分档测试文。
+
+============================================================
+
+
+【样例 4】环境类
+
+【题目】
+In the modern world, it is no longer necessary to use animals for food or use animal products, for instance, clothing and medicines.
+To what extent do you agree or disagree?
+
+【Band 9 样例（按原文件整理）】
+Animal rights groups like PETA (People for the Ethical Treatment of Animals) have long argued against the exploitation of animals and the testing of chemical products on animals. Whether we should test products on animals is a moot point, given the fact that so few companies do this nowadays.
+
+Nevertheless, the moral questions pertaining to this are still worth exploring. While it may no longer be necessary to test products on animals, there are still instances where animals are used to test human innovations. Medicine is one such area where animal testing is still regarded as essential to the development of drugs and other pioneering treatments for incurable diseases, such as Alzheimer's disease, cancer and AIDS. While human test agents are used for some courses of treatment, there are inherent dangers associated with testing on humans.
+
+A recent case in the UK arose where a drug company tested a controversial drug on humans and several died following an adverse reaction, while another individual was left permanently paralysed. In such cases, animals are perhaps better test agents than humans. While some may find it unpalatable, if an animal suffers any sort of lasting disability that can lead to a destruction of their quality of life, they can still be legally euthanised to end their suffering. Humans cannot be assisted in suicide and the issue continues to arouse great contention.
+
+I would conclude that animal testing is still necessary in fields like medicine, where the risks of testing on humans are too perilous to consider.
+
+【Band 7 样例（测试用）】
+I disagree with the idea that animals and animal products are no longer necessary in the modern world. Although people now have more alternatives than before, it is still unrealistic to claim that all uses of animals can be completely replaced at present.
+
+In terms of food and clothing, the statement is partly convincing. Many people can live healthily on plant-based diets, and synthetic materials are now widely available for shoes, jackets and other products. In wealthy urban societies especially, people often eat meat or wear leather more out of preference than necessity. For this reason, reducing animal consumption is both possible and desirable, particularly when factory farming causes environmental damage and animal suffering.
+
+However, the argument is much weaker when it comes to medicine. Despite advances in laboratory technology, some drugs and treatments still need to be tested in living organisms before they can be considered safe for humans. Cell cultures and computer simulations are helpful, but they cannot yet reproduce the full complexity of a body. If animal testing were abandoned immediately, medical progress in areas such as cancer treatment or vaccine development could slow down. In this field, the issue is not simple convenience but risk management and public safety.
+
+That said, necessity should not be used as an excuse for unlimited exploitation. Governments should fund alternatives, strengthen welfare regulations and ban animal use wherever reliable substitutes already exist.
+
+In conclusion, I do not agree that animal use is no longer necessary in all areas. It has become less necessary in food and clothing, but medicine remains a significant exception.
+
+【Band 7 预期扣分点】
+- 回应全面，但食品、服装、医药三部分的展开比重略不均衡，药品部分更强。
+- 例子偏概括化，缺少更具体的实例支撑。
+- 语言较自然，但少数句型重复，学术表达层次感一般。
+- 属于“立场明确、覆盖面较好，但论证深度不够均衡”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+I disagree with this statement because animals are still used in many parts of life. It is true that people can choose other food and materials now, but animals are still important.
+
+First, many people still eat meat, eggs and milk because they believe these foods are useful and normal. Also, some clothes like wool or leather are strong and warm. Artificial materials exist, but they are not always better or cheaper. So it is difficult to say animal products are not necessary at all.
+
+Second, medicines are an important reason. Before using a new medicine on humans, scientists need to know if it is safe. Animals are often used for this purpose. If they are not used, there may be more danger for people. Of course, scientists should try to reduce animal testing, but stopping it completely is not realistic now.
+
+In conclusion, I think the statement is too extreme. Modern society has more choices than before, but animals and animal products are still necessary in some fields.
+
+【Band 5 预期扣分点】
+- 回应了题目，但思想发展较简单。
+- 食品、服装和医药都提到了，但展开很浅。
+- 连接方式单一，论证层次有限。
+- 词汇较基础，复杂句使用少。
+- 属于“覆盖任务但展开不足”的 5 分档测试文。
+
+============================================================
+
+
+【样例 5】社会类
+
+【题目】
+Some people believe famous people's support towards international aid organisations draws attention to problems, while others think celebrities make the problems less important.
+Discuss both views and give your own opinion.
+
+【Band 9 样例（按原文件整理）】
+There are many conflicting views about celebrity involvement in charitable causes and high-profile public campaigns. Some argue that the presence of high-profile figures in campaigns to draw attention to major issues such as war, poverty and famine draws greater attention to the issues and increases public impetus to call for more action. Others, though, regard celebrities as essentially PR-hungry sycophants who simply attach their names to causes to generate good publicity for themselves.
+
+Celebrity involvement in notable causes can be traced back to the 1985 Live Aid concert, where internationally renowned musicians gathered at Wembley Stadium in London to perform music and raise money for poverty-stricken nations across the world. In the UK, initiatives such as Comic Relief and Children In Need have also relied upon celebrity involvement to raise awareness. Such events certainly have the effect of raising large amounts of money and increasing awareness of major problems blighting the world.
+
+Nonetheless, many celebrities choose to involve themselves in charitable works because they have been advised by publicists that it will either increase their profile or enable them to better promote their latest album or film. While this may appear benign, there is surely a moral objection to this kind of cynical behaviour. Money may be raised from their involvement, but one must question the ethics of someone trying to exploit others' suffering to enrich themselves even further.
+
+Overall, I would argue that celebrity involvement in worthy causes can be a good thing, but I do not believe that those who seek to further their own careers by doing so ought to be held up as beacons of charity.
+
+【Band 7 样例（测试用）】
+Celebrities often appear in campaigns for global poverty, disaster relief and refugee support. Some people argue that this is beneficial because famous individuals can attract attention that charities would never gain on their own, while others believe celebrity participation turns serious issues into entertainment. In my view, celebrity support is useful overall, although its value depends on how responsibly it is handled.
+
+Those who support celebrity involvement point out that visibility matters. International aid organisations compete for public attention in a crowded media environment, and famous actors, athletes or singers can immediately draw audiences to urgent crises. A campaign fronted by a well-known person is more likely to be reported by the press, shared on social media and remembered by the public. In addition, celebrities can encourage donations from people who would not normally engage with politics or humanitarian issues. In this sense, fame becomes a communication tool.
+
+On the other hand, critics are right to worry that celebrities may oversimplify serious problems. Humanitarian crises are often caused by war, corruption or long-term inequality, yet campaigns sometimes reduce them to emotional images and slogans. This can create sympathy without understanding. In some cases, the celebrity becomes the centre of attention, while the affected communities remain invisible. If famous supporters are using charity mainly to improve their image, the campaign may appear shallow or even disrespectful.
+
+Overall, I believe celebrity involvement can do more good than harm, provided that it supports experts rather than replacing them. Charities should use public figures to attract attention, but the real message must still come from aid workers and the people directly affected.
+
+In conclusion, celebrities can increase awareness and donations, but campaigns should be designed carefully so that public attention remains focused on the problem itself.
+
+【Band 7 预期扣分点】
+- 双边讨论完整，但对反方的“让问题变得不重要”分析还可以更深入。
+- 例子较概括，没有具体 campaign 的细致分析。
+- 语言稳定，但部分表达偏常规，观点深刻性略逊于高分文。
+- 属于“讨论两边较平衡、观点清楚，但分析力度稍弱”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+Famous people often support charities and international aid groups. Some people think this is good because it helps more people know about problems. Others think celebrities make the problems less important. I think both ideas are true, but overall famous people are helpful.
+
+On one hand, celebrities can attract public attention very quickly. If a famous singer or actor talks about hunger or war, many people will watch the news and maybe donate money. This is useful because many charities do not have enough power by themselves. A famous face can make people notice a problem.
+
+On the other hand, some celebrities only want attention for themselves. They may take photos with poor children and post them online, but they do not really understand the situation. In this case, the public may focus more on the celebrity than on the real problem. Also, some campaigns become too simple and emotional.
+
+In my opinion, celebrity support is still positive because aid groups need attention and money. However, famous people should act carefully and not become the main story.
+
+In conclusion, celebrities can help international aid organisations, but if they behave in a selfish way, they can also reduce the seriousness of the issue.
+
+【Band 5 预期扣分点】
+- 完成了 discuss both views 任务，但两边展开都较浅。
+- 例子缺失，支持力度不足。
+- 观点明确但分析不够细，论证较直白。
+- 语言资源和句式范围偏简单。
+- 属于“任务完成基本合格，但发展不足”的 5 分档测试文。
+
+============================================================
+
+
+【样例 6】教育类
+
+【题目】
+Some experts believe that it is better for children to begin learning a foreign language at primary school rather than secondary school.
+Do the advantages of this outweigh the disadvantages?
+
+【Band 9 样例（按原文件整理）】
+Language learning is an art form in the eyes of some. Research indicates that children with a proficiency in music are more likely to master a second language than those who have few artistic gifts. Moreover, large numbers of primary schools across the world have now recognised the importance of providing students with the opportunity to learn a language different from their native tongue, with Mandarin replacing French as the principal second language in many European countries.
+
+The earlier a child begins learning a new language, the higher the rate at which they acquire vocabulary and language structures will be. Even one 40-minute session each day will accelerate the speed of language acquisition, while also providing the child with transferable skills that can be applied to other areas of learning. Some would argue that if children learn a new language at elementary level, other skills and developmental attributes may be neglected, such as physical education or the absorption of critical social skills.
+
+I do not adhere to this view and believe that children should be encouraged to study a second language at an early age. There are no insurmountable obstacles to achieving this and there is no evidence that this would have a detrimental impact on other areas of a child's growth or academic achievement.
+
+In an increasingly global nexus, it is more vital than ever before for the people of the world to interact and communicate with each other. To that end, teaching primary school children a language other than their native tongue is the best approach to this. Not only will they acquire the tools of communication on the international stage, they will also have the opportunity to embrace the impenetrable mysteries of a new culture.
+
+【Band 7 样例（测试用）】
+Starting a foreign language in primary school is often seen as a better option than waiting until secondary education. In my opinion, the advantages do outweigh the disadvantages, although the success of such a policy depends on how the lessons are designed.
+
+The main benefit of earlier language learning is that young children are generally more open to new sounds and patterns. They are less afraid of making mistakes and can often imitate pronunciation more naturally than older learners. Early exposure can therefore build confidence and help students develop a long-term familiarity with another language. In addition, language study at a young age may improve memory, listening skills and cultural awareness, which are useful beyond the language classroom itself.
+
+There are, however, some disadvantages. Primary school timetables are already crowded, and adding a foreign language may reduce time for literacy, numeracy or physical education. Another problem is that not all schools have qualified teachers, especially in poorer regions. If lessons are badly taught or focus too much on memorisation, children may lose interest before they reach secondary school. In that case, an early start alone will not guarantee success.
+
+Even so, I believe these drawbacks are manageable. A foreign language does not need to dominate the curriculum; short, enjoyable lessons can be enough to create a foundation. Schools can also use songs, games and simple interaction rather than test-heavy methods. If children begin early and continue consistently, the long-term gains are likely to be greater than the temporary costs.
+
+In conclusion, although there are challenges related to time and teaching quality, the benefits of beginning a foreign language at primary school clearly outweigh the disadvantages.
+
+【Band 7 预期扣分点】
+- 立场明确，但 disadvantages 部分展开略少，论证重心明显偏向 advantages。
+- 例子偏概括，缺少具体教育场景支撑。
+- 语言准确自然，但表达略稳，缺少更高阶的复杂性。
+- 属于“优劣比较题完成较好，但论证平衡度一般”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+Many experts think children should learn a foreign language in primary school. I agree that this has more advantages than disadvantages.
+
+The biggest advantage is that young children can learn pronunciation and simple vocabulary more easily. They are curious and not afraid of speaking, so they may enjoy learning a new language. Also, starting early gives them more years to practise, so their level may become better in the future. Another benefit is that children can learn about other cultures from a young age.
+
+However, there are some disadvantages. Primary students are still learning many basic subjects, so foreign language lessons may take time from maths or reading. Also, some schools do not have good teachers, so students may not learn effectively.
+
+Even with these problems, I still think the advantages are stronger. Schools can teach the language in a fun and simple way, so children will not feel too much pressure.
+
+In conclusion, learning a foreign language at primary school is beneficial and the positive points are greater than the negative ones.
+
+【Band 5 预期扣分点】
+- 回应了 outweigh 题型，但比较分析较浅。
+- 优缺点都有提到，但缺少充分展开和具体例证。
+- 语言偏简单，句型单一。
+- 结论和主体段有一定重复。
+- 属于“基本完成任务但深度不足”的 5 分档测试文。
+
+============================================================
+
+
+【样例 7】法律类
+
+【题目】
+In some countries, a high proportion of criminal acts are committed by teenagers.
+Why has this happened? What can be done to deal with this?
+
+【Band 9 样例（按原文件整理）】
+Rising crime rates among the young are of growing concern for law enforcement officials, parents and sociologists. It is not the case that juvenile crime rates have increased across all countries, but there are countless instances over the world that illustrate a distressing trend.
+
+In the United States, for example, there has been an alarming increase in gun-related crime across all age demographics. Recently, though, there have been several alarming cases involving young white men committing mass killings against ethnic minority groups, citing their white supremacist, neo-Nazi beliefs as a justification for this. Likewise, the number of incidents involving firearms has gone up in poorer states and deprived areas of inner cities, particularly in the south of the country. Crime in general has shot up across the country as a whole.
+
+It is clear that the two key factors involved in this are economic hardship and America's excessively permissive gun legislation. The first issue can be addressed by economic policies that don't ostracise large numbers of citizens from social mobility opportunities. In order to fight crime, it is also necessary to fight poverty and deprivation. The clear majority of crimes committed in western nations are committed by people from poor households. With regard to gun crime, this is a specifically American problem and can only be addressed with a change to the second amendment, which permits all Americans to bear arms, an aspect of the US constitution that is surely out of date and unnecessary in the twenty-first century.
+
+【Band 7 样例（测试用）】
+Teenage crime is a serious issue in a number of countries, and it is usually the result of social rather than purely personal problems. In my view, the main reasons are weak family supervision, limited opportunities for young people and the growing influence of violent content online. Effective solutions therefore need to involve schools, parents and governments together.
+
+One important cause is that many teenagers grow up without enough guidance or stability. In households where parents work long hours, are absent or face conflict, young people may receive little emotional support or discipline. As a result, they can be more easily influenced by delinquent peers. Another factor is social exclusion. In poorer neighbourhoods, teenagers may feel that education and legal employment offer little hope, so crime becomes a way to gain money, status or belonging. This risk is increased by social media and online communities that glorify aggression, gangs or easy money.
+
+To address the problem, prevention is more effective than punishment alone. Schools should identify at-risk students early and provide counselling, mentoring and after-school activities so that teenagers have safer environments and stronger adult support. Governments also need to invest in deprived areas by improving education, training and youth employment opportunities. For serious offences, the justice system should impose consequences, but rehabilitation must remain central; otherwise, young offenders may simply become lifelong criminals.
+
+In conclusion, teenage crime often grows out of neglect, poverty and harmful influences rather than simple bad character. The most effective response is a combination of family support, better opportunities and rehabilitation-based intervention.
+
+【Band 7 预期扣分点】
+- 完整回应了 causes + solutions，但具体案例较少，论证略偏概括。
+- 第二段原因较多，第三段措施相对集中，平衡度还可以更好。
+- 语言稳定但不够锋利，缺少更有说服力的细节。
+- 属于“问题解决类完成较好，但证据密度一般”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+In some countries, many crimes are committed by teenagers. This happens for several reasons and governments should take action to reduce it.
+
+One reason is bad family background. Some teenagers do not get enough care from parents, so they become easy to influence by bad friends. Another reason is poverty. If a young person has no money and no good future, crime can look like a quick way. Also, movies, games and the internet sometimes show violence, so teenagers may copy bad behaviour.
+
+There are some solutions. Schools should teach students how to behave well and they should also provide more activities after class. Parents need to spend more time with their children. Governments can create jobs and training for young people, and police should control serious crime strongly.
+
+In conclusion, teenage crime happens because of family problems, poverty and bad influence. To solve it, families, schools and governments all need to work together.
+
+【Band 5 预期扣分点】
+- 回应了两个问题，但每部分展开较短。
+- 原因和措施都比较笼统，缺少细化分析和例子。
+- 逻辑基本清楚，但段落推进简单。
+- 词汇和句法资源有限。
+- 属于“任务回应基本到位，但发展明显不足”的 5 分档测试文。
+
+============================================================
+
+
+【样例 8】儿童类
+
+【题目】
+Today many children spend a lot of time playing computer games and little time on sports.
+Why is this? Is this a positive or negative development?
+
+【Band 9 样例（按原文件整理）】
+The culture of video entertainment which has become entrenched in modern society has, according to critics, been an overwhelmingly negative trend. There is little evidence to suggest that excessive time spent playing video games at the expense of engaging in sporting activities or physical pursuits is of any palpable benefit to an individual whatsoever.
+
+Contrary views are put forward that, in moderation, video games can be of benefit to those who play them, providing them with leisure time to wind down and relieve stress. However, a creeping form of compulsive addictive behaviour has now become associated with such pursuits. Video games allow for a sort of displacement among users, enabling them to feel they have assumed another identity in virtual reality, either taking on the guise of a gunman, a professional footballer or some other such fanciful version of themselves. While such escapist fantasy can be a good thing at times, prolonged immersion in fantasy can be detrimental, with psychologists linking this to conditions such as depression, anxiety, social behaviour disorders and, in extreme cases, schizophrenia.
+
+Sporting activities, conversely, are generally positive, offering health benefits both physical and mental. Time spent engaged in sport, whether a team sport or an individual pursuit, allows one to sustain good health, gain clarity of thought and prevent depression and anxiety. Young people today require regular exercise for a multitude of reasons, with the obesity and mental health epidemics being chief among them.
+
+Without doubt, the increased popularity of video games has had a detrimental impact on society, linked as it is to a series of social ills such as mental health problems and obesity. It is of paramount importance that measures are sought to encourage people to engage in physical pursuits.
+
+【Band 7 样例（测试用）】
+Many children now spend far more time on computer games than on sport. This trend can be explained by changes in technology, parenting and urban lifestyles, and I believe it is largely a negative development despite a few minor benefits.
+
+One major reason is that computer games are more accessible and attractive than ever before. Children can play them on phones, tablets, computers and consoles, often without leaving home. Games are also designed to be rewarding and immersive, which makes them harder to resist than physical exercise. Another reason is that many families live in cities where outdoor space is limited or where parents consider streets and parks unsafe. As a result, staying indoors with a screen may seem more convenient and less risky than playing sport outside.
+
+Although gaming can improve certain skills such as reaction speed or problem-solving, the overall trend is negative when it replaces physical activity. Children who spend too much time sitting may face health problems such as obesity, poor posture and lack of fitness. They may also miss the social benefits of sport, including teamwork, discipline and face-to-face communication. In addition, excessive gaming can become addictive and reduce time for homework or sleep.
+
+That said, the issue is not that all games are harmful. The real problem is imbalance. If children played games in moderation while still exercising regularly, the negative effects would be much smaller. Unfortunately, in many cases that balance is absent.
+
+In conclusion, children play more computer games because digital entertainment is convenient and modern life often restricts outdoor activity. Overall, this is a negative development because it harms physical health and weakens social development when taken too far.
+
+【Band 7 预期扣分点】
+- 回应完整，原因和评价都写到了，但正面作用部分展开较少。
+- 例子基本缺失，更多是普遍性分析。
+- 结尾较稳妥，思想深度尚可但不算特别突出。
+- 属于“问题+评价类表现扎实，但细节证据一般”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+Nowadays many children play computer games a lot and do little sport. There are several reasons for this, and I think it is mainly a negative development.
+
+First, computer games are easy and interesting. Children can play at home with a phone or computer, so they do not need to go outside. Also, many parents are busy and think it is safer for children to stay at home. Another reason is that games are exciting and children can play with friends online.
+
+This trend is mostly negative. If children do not do enough exercise, they can become unhealthy and fat. They may also have bad eyes or sleep problems. In addition, sports teach teamwork and communication, but games often make children sit alone for a long time.
+
+Some people say games can help children relax, and this is true to some degree. But if they spend too much time on them, the bad effects are more obvious.
+
+In conclusion, children spend more time on games because they are easy and attractive, but I think this is a negative development overall.
+
+【Band 5 预期扣分点】
+- 任务回应基本完整，但分析较表面。
+- 原因和影响都有提到，但支持不足。
+- 词汇偏基础，句式变化有限。
+- 正反两面处理不够深入。
+- 属于“清楚但简单”的 5 分档测试文。
+
+============================================================
+
+
+【样例 9】技术类
+
+【题目】
+Some scientists believe intelligent life forms may exist on other planets and some want to send messages into space to contact these life forms. But other scientists believe it is a bad idea and it could be dangerous.
+Discuss both views and give your own opinion.
+
+【Band 9 样例（按原文件整理）】
+The possibility of civilisations or life forms living within the universe has long been a source of interest for governments and writers alike. From the renowned H.G. Wells and Jules Verne novels to top secret government programs, alien life has fascinated people for more than a hundred years now, with a multitude of conspiracy theories surfacing as a consequence.
+
+The possibility of making contact with an alien race somewhere in our own galaxy or further afar has been subject to much speculation and rumour. Depictions of alien invasions in popular literature and film are often apocalyptic, with aliens portrayed as ruthless, violent predators whose sole aim is to eliminate human life and mine the Earth of its resources. Many conspiracy theorists believe that governments of the world have already made contact with alien species and are suppressing the information for unspecified reasons, all of which are unquestionably sinister in their eyes. While there is clearly no evidence for such nefarious activity, serious scientists do put forward similarly dark concerns.
+
+If humanity were to make contact with aliens, or they were to make contact with us, the reasons for doing so would unlikely be good. We only have to look to human history to recognise that the arrival of colonists in a foreign land is rarely of benefit to the local population. There is not a single example in colonial history where violence and bloodshed did not feature. Indeed there are countless examples of ancient cultures being destroyed by the actions of conquistadors.
+
+Ultimately, we must remain guarded about the prospect of alien life forms, yet at the same time we should also prioritise research into things taking place on Earth. It may be fascinating to discover a civilisation millions of light years away, but it is unlikely to be of any significance to our immediate existence.
+
+【Band 7 样例（测试用）】
+The idea of sending messages into space in order to contact intelligent life on other planets is both exciting and controversial. Some scientists support it because it could expand human knowledge, while others worry that making contact may create risks we do not fully understand. I believe caution is necessary, but I would not oppose communication entirely if it were internationally controlled.
+
+Supporters of contact argue that the possible benefits are enormous. If another intelligent civilisation exists, even receiving a reply would transform human understanding of science, philosophy and our place in the universe. Contact might also lead to new knowledge about technology, energy or biology. From this perspective, refusing to communicate because of fear could mean missing the greatest discovery in human history. Humans have always explored the unknown, and space should not be treated differently.
+
+However, critics argue that sending signals is dangerous precisely because we know almost nothing about who may receive them. An advanced civilisation could be peaceful, but it could also be hostile or exploit weaker species. Even if direct physical danger is unlikely, a sudden message from extraterrestrial life could cause political conflict or social panic on Earth. Another concern is that a small group of scientists should not make such a decision on behalf of all humanity, because the consequences would affect every country.
+
+In my opinion, the dangers are uncertain but serious enough to justify restraint. I would support passive observation and international debate before any strong attempt to reveal our location. If messages are ever sent, the process should be transparent and agreed upon globally rather than driven by a few individuals.
+
+In conclusion, contacting alien life could bring extraordinary knowledge, but it may also involve unpredictable risks. Therefore, communication should be approached with great caution rather than enthusiasm alone.
+
+【Band 7 预期扣分点】
+- 双边讨论较完整，但正方和反方的具体证据都偏理论化。
+- 个人观点清楚，但最后方案性建议略概括。
+- 语言较成熟，但缺少更具体的例证或科学背景支撑。
+- 属于“讨论充分但证据偏抽象”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+Some scientists want to send messages to space to contact alien life, while others think this is dangerous. I will discuss both views and give my opinion.
+
+On one side, contacting aliens could be very important for humans. It may help us learn more about the universe and maybe get new knowledge. People are naturally curious, so exploring space and trying to communicate is a normal step. If other intelligent life exists, finding it would be a great event.
+
+On the other side, this idea may be risky. We do not know what aliens are like. They may be friendly, but they may also be dangerous. If they know our location, this could create problems for Earth. Also, ordinary people have no chance to decide this, but the result could affect everyone.
+
+In my opinion, scientists should be careful. I think research about space should continue, but sending messages should not happen too quickly. There should be discussion among many countries first.
+
+In conclusion, contacting aliens may bring knowledge, but it could also be dangerous, so we should move carefully.
+
+【Band 5 预期扣分点】
+- 完成了 discuss both views + opinion，但发展深度有限。
+- 论证比较抽象，例子缺失。
+- 部分表达重复明显，如 dangerous / knowledge / space。
+- 句式和词汇偏简单。
+- 属于“任务完成但说理较弱”的 5 分档测试文。
+
+============================================================
+
+
+【样例 10】商业类
+
+【题目】
+People's shopping habits depend more on the age group they belong to than any other factors.
+To what extent do you agree or disagree?
+
+【Band 9 样例（按原文件整理）】
+Age-oriented studies into spending habits often draw differing conclusions. The demographics between age groups are never clear, as within each age demographic there are various sub-demographics (e.g. gender, race, social background etc.) that can distort the outcomes of surveys.
+
+Age is certainly a significant factor in one's spending habits. People in their thirties and forties may prioritize spending on family if they have children, while those in their twenties are more likely to spend money on personal items and leisure. As people get older and health becomes a bigger priority, they become more inclined towards spending on goods relating to comfort and care. There is no doubt that age is a major determinant of people's spending habits and one's shopping choices are subject to change as one gets older.
+
+Other factors, though, contribute to the spending habits of individuals. Social background, education level, gender, race and other specific indicators have an impact on a person's spending habits. Women may spend highly on cosmetics, clothes and female hygiene products, while men may spend on sporting goods or alcoholic beverages. People of higher education levels may spend more on books, cultural pursuits such as theatre and opera, whereas the wealthier members of society might spend more on luxuries such as expensive hotels and restaurants. People at the poorest end of the spectrum are likely to spend more on basic priorities such as food and utilities.
+
+There are a wide range of factors that affect people's spending habits among which age is certainly important, but it is by no means the most important factor.
+
+【Band 7 样例（测试用）】
+Age clearly influences what people buy, but I disagree that it is more important than every other factor. In my view, age matters because people at different life stages have different priorities, yet income and social background often shape shopping behaviour even more strongly.
+
+Age affects spending in predictable ways. Teenagers may spend more on entertainment, fashion or digital products, while parents in middle age often focus on household items, education and family expenses. Older people may prioritise healthcare, comfort and services that make everyday life easier. These patterns are real because age is connected to lifestyle and responsibilities.
+
+However, two people of the same age can still shop very differently if their income levels are far apart. A wealthy university student and a low-income university student may both belong to the same age group, yet one can afford branded clothes and travel while the other mainly buys essentials. Likewise, cultural background and education can change consumption patterns significantly. Someone from an environmentally conscious family may avoid fast fashion, whereas another person of the same age may shop purely according to price or social trends. This suggests that age interacts with other factors rather than controlling behaviour on its own.
+
+For this reason, I believe income is often the strongest influence because it determines what is financially possible, while age mainly influences preference. A person may want certain products because of their life stage, but whether they can actually buy them depends on money and circumstances.
+
+In conclusion, age is an important influence on shopping habits, but it is not the dominant factor in all cases. Financial situation and social background are often more decisive.
+
+【Band 7 预期扣分点】
+- 立场明确，比较逻辑清楚，但对“any other factors”反驳可以更深入。
+- 例子合理但偏常规，缺少更细致的消费场景。
+- 语言自然稳定，但复杂性与锋利度略逊高分文。
+- 属于“反驳型作文较成熟，但分析深度仍有限”的 7 分档测试文。
+
+【Band 5 样例（测试用）】
+I do not fully agree that shopping habits depend mostly on age. Age is important, but there are other factors too.
+
+It is true that people of different ages buy different things. Young people often spend money on clothes, games and going out with friends. Middle-aged people may spend more on children, food and family needs. Old people may buy medicine or health products. So age can change what people want.
+
+However, money is also very important. A rich young person and a poor young person do not shop in the same way. Also, social background matters. Some people like famous brands because of their environment, while others only care about low prices. Because of this, age cannot be the only or the biggest reason.
+
+In conclusion, age affects shopping habits, but other things like income and social background are also very important. Therefore, I disagree that age is more important than all other factors.
+
+【Band 5 预期扣分点】
+- 观点清楚，但展开较短。
+- 对 income/social background 的论证较表面。
+- 例子简单，分析链不够长。
+- 语言资源有限，结构较基础。
+- 属于“基本回应题目但深度不足”的 5 分档测试文。
+
+============================================================
+

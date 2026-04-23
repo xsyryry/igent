@@ -18,9 +18,6 @@ DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_BENCHMARK_FILES = (
     "academic-test-sample-questions.html",
     "ielts-academic-format-reading.html",
-    "ielts-writing-band-descriptors-and-key-assessment-criteria.html",
-    "ielts-writing-band-descriptors.pdf",
-    "ielts-speaking-band-descriptors.pdf",
 )
 
 

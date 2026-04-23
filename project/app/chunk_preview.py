@@ -23,7 +23,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--file", required=True, help="Filename under data/ or an absolute path.")
     parser.add_argument(
         "--strategy",
-        choices=("auto", "llm_auto", "sliding", "headings", "qa_pairs", "rubric_items", "mistake_rules"),
+        choices=("auto", "llm_auto", "sliding", "headings", "qa_pairs", "mistake_rules"),
         default="auto",
         help="Chunking strategy. Default: auto.",
     )

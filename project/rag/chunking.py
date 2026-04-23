@@ -85,7 +85,6 @@ def chunk_document(
         "sliding": _chunk_by_sliding_window,
         "headings": _chunk_by_headings,
         "qa_pairs": _chunk_by_qa_pairs,
-        "rubric_items": _chunk_by_rubric_items,
         "mistake_rules": _chunk_by_mistake_rules,
     }
     chunks = builders[chosen_strategy](path, text, chunk_size, overlap)
@@ -99,8 +98,6 @@ def resolve_chunk_strategy(path: Path, text: str, requested: str) -> str:
         return requested
 
     filename = path.name.lower()
-    if "band descriptor" in filename or "评分标准" in filename:
-        return "rubric_items"
     if "真题" in path.name or "question" in filename or "task 2" in text.lower():
         return "qa_pairs"
     if "错题" in path.name or "wrong" in filename or "mistake" in filename:
@@ -154,9 +151,7 @@ def _count_heading_markers(text: str) -> int:
     patterns = (
         r"(?m)^#{1,4}\s+",
         r"(?m)^(Part|Task|Section|Chapter)\s+\d+",
-        r"(?m)^[一二三四五六七八九十]+、",
-        r"(?m)^（[一二三四五六七八九十]+）",
-        r"(?m)^\d+(\.\d+)*\s+",
+        r"(?m)^\d+(?:\.\d+)*\s+",
     )
     return sum(len(re.findall(pattern, text, flags=re.IGNORECASE)) for pattern in patterns)
 
@@ -189,7 +184,7 @@ def _chunk_by_sliding_window(path: Path, text: str, chunk_size: int, overlap: in
 def _chunk_by_headings(path: Path, text: str, chunk_size: int, overlap: int) -> list[ChunkRecord]:
     del chunk_size, overlap
     heading_regex = re.compile(
-        r"(?m)^(#{1,4}\s+.+|(?:Part|Task|Section|Chapter)\s+\d+.*|[一二三四五六七八九十]+、.*|（[一二三四五六七八九十]+）.*|\d+(?:\.\d+)*\s+.+)$",
+        r"(?m)^(#{1,4}\s+.+|(?:Part|Task|Section|Chapter)\s+\d+.*|\d+(?:\.\d+)*\s+.+)$",
         flags=re.IGNORECASE,
     )
 
@@ -243,52 +238,10 @@ def _chunk_by_qa_pairs(path: Path, text: str, chunk_size: int, overlap: int) -> 
     return chunks
 
 
-def _chunk_by_rubric_items(path: Path, text: str, chunk_size: int, overlap: int) -> list[ChunkRecord]:
-    del chunk_size, overlap
-    rubric_patterns = [
-        "Task Achievement",
-        "Task Response",
-        "Coherence and Cohesion",
-        "Lexical Resource",
-        "Grammatical Range and Accuracy",
-        "Fluency and Coherence",
-        "Pronunciation",
-        "任务回应",
-        "任务完成情况",
-        "连贯与衔接",
-        "词汇资源",
-        "语法多样性与准确性",
-        "流利度与连贯性",
-        "发音",
-    ]
-    item_regex = re.compile(
-        rf"(?mis)(^|\n)(?P<title>{'|'.join(re.escape(item) for item in rubric_patterns)})(?P<body>.*?)(?=(\n(?:{'|'.join(re.escape(item) for item in rubric_patterns)}))|\Z)"
-    )
-    matches = list(item_regex.finditer(text))
-    if not matches:
-        return _chunk_by_headings(path, text, 1200, 150)
-
-    chunks: list[ChunkRecord] = []
-    for index, match in enumerate(matches, start=1):
-        title = match.group("title").strip()
-        body = match.group("body").strip()
-        chunks.append(
-            ChunkRecord(
-                chunk_id=f"{path.stem}-rubric-{index:03d}",
-                source_file=path.name,
-                strategy="rubric_items",
-                title=title,
-                content=body,
-                metadata={"rubric_item": title},
-            )
-        )
-    return chunks
-
-
 def _chunk_by_mistake_rules(path: Path, text: str, chunk_size: int, overlap: int) -> list[ChunkRecord]:
     del chunk_size, overlap
     rule_regex = re.compile(
-        r"(?m)^(?:[-*]\s+|\d+[.)]\s+|[一二三四五六七八九十]+、|（[一二三四五六七八九十]+）)(.+)$"
+        r"(?m)^(?:[-*]\s+|\d+[.)]\s+)(.+)$"
     )
     matches = list(rule_regex.finditer(text))
     if not matches:

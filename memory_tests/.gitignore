@@ -1,0 +1,4 @@
+__pycache__/
+*.db
+*_report.txt
+*_nollm.txt

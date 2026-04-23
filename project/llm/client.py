@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 try:
@@ -11,6 +12,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency during boo
     requests = None  # type: ignore[assignment]
 
 from project.config import get_config
+from project.agent.nodes.runtime_metrics import record_llm_usage
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,22 @@ class LLMClient:
             base_url=config.llm_base_url,
             model=config.llm_model,
             timeout=config.llm_timeout,
+        )
+
+    @classmethod
+    def from_memory_config(cls) -> "LLMClient":
+        """Create a client for memory extraction.
+
+        MEMORY_LLM_* settings can fully override the default LLM settings. If
+        they are absent, config falls back to LLM_API_KEY/LLM_BASE_URL/LLM_MODEL.
+        """
+
+        config = get_config()
+        return cls(
+            api_key=config.memory_llm_api_key,
+            base_url=config.memory_llm_base_url,
+            model=config.memory_llm_model,
+            timeout=config.memory_llm_timeout,
         )
 
     @property
@@ -82,6 +100,7 @@ class LLMClient:
             "max_tokens": max_tokens,
         }
 
+        started_at = time.monotonic()
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
             response.raise_for_status()
@@ -90,7 +109,16 @@ class LLMClient:
             logger.warning("LLM request failed, fallback enabled: %s", exc)
             return None
 
-        return self._extract_text(data)
+        text = self._extract_text(data)
+        self._record_usage(
+            data=data,
+            model=model or self.model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            response_text=text or "",
+            latency_ms=int((time.monotonic() - started_at) * 1000),
+        )
+        return text
 
     def _build_chat_url(self) -> str:
         """Build a flexible OpenAI-compatible chat-completions URL."""
@@ -123,3 +151,44 @@ class LLMClient:
             return output_text.strip()
 
         return None
+
+    @staticmethod
+    def _record_usage(
+        *,
+        data: dict[str, Any],
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
+        response_text: str,
+        latency_ms: int,
+    ) -> None:
+        usage = data.get("usage") if isinstance(data, dict) else {}
+        usage = usage if isinstance(usage, dict) else {}
+        prompt_tokens = int(
+            usage.get("prompt_tokens")
+            or usage.get("input_tokens")
+            or _estimate_tokens(f"{system_prompt}\n{user_prompt}")
+        )
+        completion_tokens = int(
+            usage.get("completion_tokens")
+            or usage.get("output_tokens")
+            or _estimate_tokens(response_text)
+        )
+        total_tokens = int(usage.get("total_tokens") or prompt_tokens + completion_tokens)
+        record_llm_usage(
+            {
+                "model": model,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+                "latency_ms": latency_ms,
+            }
+        )
+
+
+def _estimate_tokens(text: str) -> int:
+    """Cheap multilingual token estimate used when provider usage is absent."""
+
+    if not text:
+        return 0
+    return max(1, len(text) // 4)

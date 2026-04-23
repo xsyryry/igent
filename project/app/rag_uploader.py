@@ -64,7 +64,7 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--chunk-strategy",
-        choices=("auto", "llm_auto", "sliding", "headings", "qa_pairs", "rubric_items", "mistake_rules"),
+        choices=("auto", "llm_auto", "sliding", "headings", "qa_pairs", "mistake_rules"),
         default="auto",
         help="Chunking strategy when --use-chunks is enabled.",
     )

@@ -22,7 +22,7 @@ Rules:
 - Use only booleans for tool switches.
 - Keep plan short and practical.
 - Prefer web_search for real-time policy/news questions.
-- Prefer rag for study materials, scoring criteria, lecture notes, uploaded materials, and mistake summaries.
+- Prefer rag for study materials, lecture notes, uploaded materials, and mistake summaries. Do not use RAG for official IELTS scoring standards; use the writing review skill policy instead.
 - Prefer writing when the user wants a Task 2 prompt or essay review.
 - Prefer data_collection when the user wants to collect/download IELTS materials or prepare RAG data.
 - Do not include explanations outside JSON.

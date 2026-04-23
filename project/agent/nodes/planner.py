@@ -31,8 +31,6 @@ REALTIME_WEB_SEARCH_KEYWORDS = (
 RAG_HINT_KEYWORDS = (
     "题库",
     "讲义",
-    "评分标准",
-    "评分",
     "用户上传",
     "上传资料",
     "资料",
@@ -40,7 +38,6 @@ RAG_HINT_KEYWORDS = (
     "总结",
     "范文",
     "sample answer",
-    "band descriptor",
 )
 
 MISTAKE_RAG_KEYWORDS = (

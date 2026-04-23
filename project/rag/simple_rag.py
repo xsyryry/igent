@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from functools import lru_cache
 from pathlib import Path
 import math
 import re
+import threading
 from typing import Any
 
 from project.rag.chunking import chunk_document
@@ -16,6 +17,9 @@ MAX_FILES = 40
 BM25_K1 = 1.4
 BM25_B = 0.72
 RERANK_POOL_MIN = 30
+MAX_RANK_INPUT = 12000
+_INDEX_CACHE: tuple["IndexedChunk", ...] | None = None
+_INDEX_LOAD_LOCK = threading.Lock()
 
 
 @dataclass(slots=True)
@@ -69,10 +73,11 @@ class SimpleRAGService:
             and not _is_banned(item, set(banned_doc_ids or []), set(banned_chunk_ids or []))
         ]
         if dataset_scope:
-            filtered = [item for item in chunks if dataset_scope.lower() in item.doc_type or dataset_scope.lower() in item.source.lower()]
+            filtered = [item for item in chunks if _matches_dataset_scope(item, dataset_scope)]
             chunks = filtered or chunks
         if filters:
             chunks = [item for item in chunks if _matches_filters(item, filters)]
+        chunks = _prefilter_rank_input(question, chunks, MAX_RANK_INPUT)
         if not chunks:
             return {
                 "question": question,
@@ -114,15 +119,22 @@ class SimpleRAGService:
         }
 
 
-@lru_cache(maxsize=1)
 def _load_index() -> tuple[IndexedChunk, ...]:
     from project.rag.local_index import load_persistent_index
 
-    persistent_index = load_persistent_index()
-    if persistent_index:
-        return persistent_index
+    global _INDEX_CACHE
+    if _INDEX_CACHE is not None:
+        return _INDEX_CACHE
+    with _INDEX_LOAD_LOCK:
+        if _INDEX_CACHE is not None:
+            return _INDEX_CACHE
+        persistent_index = load_persistent_index()
+        if persistent_index:
+            _INDEX_CACHE = persistent_index
+            return _INDEX_CACHE
 
-    return _build_runtime_index()
+        _INDEX_CACHE = _build_runtime_index()
+        return _INDEX_CACHE
 
 
 def _build_runtime_index() -> tuple[IndexedChunk, ...]:
@@ -139,27 +151,37 @@ def _build_runtime_index() -> tuple[IndexedChunk, ...]:
     files = sorted(files)[:MAX_FILES]
 
     indexed: list[IndexedChunk] = []
-    for path in files:
-        try:
-            chunks = chunk_document(path, strategy="auto", chunk_size=900, overlap=120)
-        except Exception:
-            continue
-        for chunk in chunks[:30]:
-            text = chunk.content.strip()
-            if not text:
-                continue
-            source = str(path.relative_to(Path.cwd())).replace("\\", "/")
-            indexed.append(
-                IndexedChunk(
-                    id=chunk.chunk_id,
-                    source=source,
-                    text=text,
-                    doc_type=_infer_doc_type(path, text),
-                    tokens=_token_vector(text),
-                    metadata=_build_chunk_metadata(path, chunk, text),
-                )
-            )
+    with ThreadPoolExecutor(max_workers=min(8, max(len(files), 1))) as executor:
+        for file_chunks in executor.map(_index_file, files):
+            indexed.extend(file_chunks)
     return tuple(indexed)
+
+
+def _index_file(path: Path) -> list[IndexedChunk]:
+    """Map one document into indexed chunks; caller reduces all documents."""
+
+    try:
+        chunks = chunk_document(path, strategy="auto", chunk_size=900, overlap=120)
+    except Exception:
+        return []
+
+    indexed: list[IndexedChunk] = []
+    for chunk in chunks[:30]:
+        text = chunk.content.strip()
+        if not text:
+            continue
+        source = str(path.relative_to(Path.cwd())).replace("\\", "/")
+        indexed.append(
+            IndexedChunk(
+                id=chunk.chunk_id,
+                source=source,
+                text=text,
+                doc_type=_infer_doc_type(path, text),
+                tokens=_token_vector(text),
+                metadata=_build_chunk_metadata(path, chunk, text),
+            )
+        )
+    return indexed
 
 
 def _build_chunk_metadata(path: Path, chunk: Any, text: str) -> dict[str, Any]:
@@ -194,16 +216,11 @@ def _infer_doc_type(path: Path, text: str) -> str:
     lowered_text = text.lower()
     if (
         "writing" in lowered
-        or "descriptor" in lowered
         or "task 2" in lowered
         or "essay" in lowered_text
         or "to what extent" in lowered_text
         or "discuss both" in lowered_text
         or "give reasons" in lowered_text
-        or "task response" in lowered_text
-        or "coherence and cohesion" in lowered_text
-        or "lexical resource" in lowered_text
-        or "grammatical range" in lowered_text
     ):
         return "writing"
     if "reading" in lowered or "not given" in lowered_text or "true / false" in lowered_text:
@@ -274,9 +291,16 @@ def _matches_filters(item: IndexedChunk, filters: dict[str, Any]) -> bool:
     return True
 
 
+def _matches_dataset_scope(item: IndexedChunk, dataset_scope: str) -> bool:
+    scope = dataset_scope.lower().strip()
+    if scope in {"magazine", "magazines", "foreign_magazine", "foreign_magazines", "news_corpus"}:
+        source = item.source.lower()
+        publication = str(item.metadata.get("publication") or "").strip()
+        return bool(publication) or "awesome-english-ebooks" in source or "news_corpus" in source
+    return scope in item.doc_type or scope in item.source.lower()
+
+
 def _infer_chunk_type(strategy: str, text: str) -> str:
-    if strategy == "rubric_items":
-        return "rubric"
     if strategy == "qa_pairs":
         return "qa_pair"
     if len(re.findall(r"[.!?。！？]", text)) <= 2 and len(text) < 320:
@@ -326,8 +350,6 @@ def _infer_stance(text: str) -> str:
 
 def _infer_register(text: str) -> str:
     lowered = text.lower()
-    if any(token in lowered for token in ("band", "criterion", "descriptor", "task response")):
-        return "analytical"
     if any(token in lowered for token in ("study", "practice", "student", "ielts")):
         return "formal"
     return "neutral"
@@ -372,11 +394,36 @@ def _extract_entities(text: str, limit: int = 8) -> list[str]:
     return seen
 
 
+def _prefilter_rank_input(question: str, chunks: list[IndexedChunk], limit: int) -> list[IndexedChunk]:
+    if len(chunks) <= limit:
+        return chunks
+    query_terms = set(_tokenize(question))
+    lowered_question = question.lower()
+    style_query = _is_style_query(lowered_question)
+    scored: list[tuple[float, IndexedChunk]] = []
+    for item in chunks:
+        metadata = item.metadata
+        style_score = _style_intent_boost(lowered_question, metadata)
+        token_hits = sum(1 for term in query_terms if item.tokens.get(term, 0.0) > 0.0)
+        metadata_hits = len(query_terms & set(_tokenize(_metadata_text(metadata))))
+        if style_query:
+            score = 1.35 * style_score + 0.08 * token_hits + 0.42 * metadata_hits + _imitation_metadata_score(item)
+        else:
+            score = style_score + 0.18 * token_hits + 0.28 * metadata_hits
+        if score > 0.0:
+            scored.append((score, item))
+    if not scored:
+        return chunks[:limit]
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [item for _, item in scored[:limit]]
+
+
 def _rank_chunks(question: str, chunks: list[IndexedChunk], top_k: int, mode: str) -> list[RankedChunk]:
     query_terms = _tokenize(question)
     if not query_terms:
         return []
 
+    style_query = _is_style_query(question)
     stats = _bm25_stats(chunks, set(query_terms))
     prelim = [
         RankedChunk(
@@ -397,15 +444,20 @@ def _rank_chunks(question: str, chunks: list[IndexedChunk], top_k: int, mode: st
 
     bm25_max = max((item.bm25_score for item in pool), default=0.0) or 1.0
     boost_max = max((item.metadata_boost for item in pool), default=0.0) or 1.0
-    for ranked in pool:
-        ranked.rerank_score = _rerank_score(question, query_terms, ranked.item)
+    rerank_scores = [_rerank_score(question, query_terms, ranked.item) for ranked in pool]
+    for ranked, rerank_score in zip(pool, rerank_scores):
+        ranked.rerank_score = rerank_score
     rerank_max = max((item.rerank_score for item in pool), default=0.0) or 1.0
 
     for ranked in pool:
         bm25 = ranked.bm25_score / bm25_max
         boost = ranked.metadata_boost / boost_max
         rerank = ranked.rerank_score / rerank_max
-        ranked.final_score = _weighted_final_score(bm25, boost, rerank, mode)
+        ranked.final_score = (
+            _weighted_style_final_score(bm25, boost, rerank, ranked.item)
+            if style_query
+            else _weighted_final_score(bm25, boost, rerank, mode)
+        )
 
     return _dedupe_ranked(sorted(pool, key=lambda item: item.final_score, reverse=True), top_k)
 
@@ -469,32 +521,48 @@ def _bm25_score(item: IndexedChunk, query_terms: list[str], stats: dict[str, Any
 def _metadata_boost(question: str, query_terms: list[str], item: IndexedChunk) -> float:
     query_set = set(query_terms)
     metadata = item.metadata
+    style_query = _is_style_query(question)
     weighted_fields = (
-        ("article_title", 0.45),
-        ("section_title", 0.6),
-        ("publication", 0.4),
-        ("issue_date", 0.25),
-        ("topic", 0.45),
-        ("chunk_type", 0.25),
-        ("paragraph_role", 0.25),
-        ("stance", 0.2),
+        ("article_title", 0.15 if style_query else 0.45),
+        ("section_title", 0.25 if style_query else 0.6),
+        ("publication", 0.12 if style_query else 0.4),
+        ("issue_date", 0.08 if style_query else 0.25),
+        ("topic", 0.18 if style_query else 0.45),
+        ("chunk_type", 0.9 if style_query else 0.5),
+        ("rag_layer", 1.1 if style_query else 0.65),
+        ("paragraph_role", 1.25 if style_query else 0.75),
+        ("structure_pattern", 1.3 if style_query else 0.8),
+        ("argument_style", 1.1 if style_query else 0.65),
+        ("sentence_complexity", 0.95 if style_query else 0.55),
+        ("sentence_type", 1.0 if style_query else 0.65),
+        ("patterns", 1.35 if style_query else 0.85),
+        ("function", 1.15 if style_query else 0.75),
+        ("sentence_function", 1.15 if style_query else 0.75),
+        ("difficulty", 0.35),
+        ("retrieval_channel", 0.7),
+        ("style_intent", 0.8),
+        ("stance", 0.25 if style_query else 0.2),
         ("register", 0.2),
-        ("sentence_pattern", 0.25),
-        ("keywords", 0.55),
-        ("entities", 0.35),
+        ("sentence_pattern", 0.75 if style_query else 0.25),
+        ("keywords", 0.65 if style_query else 0.55),
+        ("entities", 0.1 if style_query else 0.35),
     )
     boost = _field_overlap(query_set, item.doc_type, 0.5)
-    boost += _field_overlap(query_set, item.source, 0.25)
+    if not style_query:
+        boost += _field_overlap(query_set, item.source, 0.25)
     for field, weight in weighted_fields:
         boost += _field_overlap(query_set, metadata.get(field), weight)
 
     lowered_question = question.lower()
     title_text = f"{metadata.get('article_title', '')} {metadata.get('section_title', '')}".lower()
-    if title_text and any(phrase in title_text for phrase in _query_phrases(lowered_question)):
+    if not style_query and title_text and any(phrase in title_text for phrase in _query_phrases(lowered_question)):
         boost += 0.45
-    if str(metadata.get("chunk_type") or "") in {"rubric", "qa_pair"}:
+    if str(metadata.get("chunk_type") or "") == "qa_pair":
         boost += _intent_boost(lowered_question, item)
-    return min(boost, 3.0)
+    boost += _style_intent_boost(lowered_question, metadata)
+    if style_query:
+        boost += _imitation_metadata_score(item)
+    return min(boost, 6.5 if style_query else 5.0)
 
 
 def _rerank_score(question: str, query_terms: list[str], item: IndexedChunk) -> float:
@@ -502,12 +570,22 @@ def _rerank_score(question: str, query_terms: list[str], item: IndexedChunk) -> 
     text = item.text.lower()
     source = item.source.lower()
     metadata_text = _metadata_text(item.metadata).lower()
-    score = 0.55 * _cosine(query_vec, item.tokens)
-    score += 0.2 * _phrase_score(question.lower(), text)
-    score += 0.15 * _phrase_score(question.lower(), metadata_text)
-    score += 0.2 * _proximity_score(query_terms, text)
+    lowered_question = question.lower()
+    if _is_style_query(lowered_question):
+        score = 0.08 * _cosine(query_vec, item.tokens)
+        score += 0.05 * _phrase_score(lowered_question, text)
+        score += 0.45 * _phrase_score(lowered_question, metadata_text)
+        score += 0.05 * _proximity_score(query_terms, text)
+        score += 0.95 * _style_intent_boost(lowered_question, item.metadata)
+        score += 0.75 * _imitation_metadata_score(item)
+    else:
+        score = 0.3 * _cosine(query_vec, item.tokens)
+        score += 0.14 * _phrase_score(lowered_question, text)
+        score += 0.28 * _phrase_score(lowered_question, metadata_text)
+        score += 0.12 * _proximity_score(query_terms, text)
+        score += 0.55 * _style_intent_boost(lowered_question, item.metadata)
     if any(term in source for term in set(query_terms)):
-        score += 0.08
+        score += 0.03
     score -= _length_penalty(item.text)
     return max(score, 0.0)
 
@@ -518,6 +596,12 @@ def _weighted_final_score(bm25: float, boost: float, rerank: float, mode: str) -
     if mode == "local":
         return 0.62 * bm25 + 0.18 * boost + 0.2 * rerank
     return 0.55 * bm25 + 0.25 * boost + 0.2 * rerank
+
+
+def _weighted_style_final_score(bm25: float, boost: float, rerank: float, item: IndexedChunk) -> float:
+    """For writing-style retrieval, prefer reusable form over topical word overlap."""
+
+    return 0.16 * bm25 + 0.44 * boost + 0.28 * rerank + 0.12 * _imitation_metadata_score(item)
 
 
 def _dedupe_ranked(items: list[RankedChunk], top_k: int) -> list[RankedChunk]:
@@ -567,7 +651,18 @@ def _metadata_text(metadata: dict[str, Any]) -> str:
         "section_title",
         "topic",
         "chunk_type",
+        "rag_layer",
         "paragraph_role",
+        "structure_pattern",
+        "argument_style",
+        "sentence_complexity",
+        "sentence_type",
+        "patterns",
+        "function",
+        "sentence_function",
+        "difficulty",
+        "retrieval_channel",
+        "style_intent",
         "stance",
         "register",
         "sentence_pattern",
@@ -582,11 +677,110 @@ def _metadata_text(metadata: dict[str, Any]) -> str:
     return " ".join(parts)
 
 
+def _is_style_query(question: str) -> bool:
+    lowered = question.lower()
+    return any(
+        token in lowered
+        for token in (
+            "body paragraph",
+            "topic sentence",
+            "explanation",
+            "example",
+            "wrap up",
+            "complex sentence",
+            "sentence variety",
+            "relative clause",
+            "non finite",
+            "concession",
+            "rebuttal",
+            "balanced argument",
+            "thesis statement",
+            "clear position",
+            "conclusion paragraph",
+            "final judgement",
+            "argument support",
+            "precise logic",
+            "syntax",
+            "structure",
+        )
+    )
+
+
+def _imitation_metadata_score(item: IndexedChunk) -> float:
+    metadata = item.metadata
+    layer = str(metadata.get("rag_layer") or metadata.get("chunk_type") or "").lower()
+    text = item.text.strip()
+    text_len = len(text)
+    score = 0.0
+    if layer == "sentence":
+        word_count = int(metadata.get("sentence_word_count") or len(_tokenize(text)))
+        if 14 <= word_count <= 38:
+            score += 0.4
+        if str(metadata.get("sentence_type") or "").lower() == "complex":
+            score += 0.3
+        if metadata.get("patterns"):
+            score += 0.35
+    elif layer == "paragraph":
+        if 260 <= text_len <= 1100:
+            score += 0.45
+        if metadata.get("structure_pattern"):
+            score += 0.35
+        if metadata.get("paragraph_role") not in (None, "", "neutral"):
+            score += 0.25
+    elif layer == "structure_template":
+        score += 0.65
+        if metadata.get("structure_pattern"):
+            score += 0.35
+
+    if metadata.get("argument_style") in {"balanced", "expository", "example_driven"}:
+        score += 0.25
+    if metadata.get("sentence_complexity") in {"medium_high", "high"} or metadata.get("difficulty") in {"medium_high", "high"}:
+        score += 0.15
+    if _looks_like_noisy_reference(text, metadata):
+        score -= 0.45
+    return max(0.0, min(score, 1.8))
+
+
+def _looks_like_noisy_reference(text: str, metadata: dict[str, Any]) -> bool:
+    title = f"{metadata.get('article_title', '')} {metadata.get('section_title', '')}".lower()
+    lowered = text.lower()
+    if any(token in title for token in ("| next |", "section menu", "main menu", "previous |")):
+        return True
+    if lowered.count("[entity]") >= 8:
+        return True
+    if any(token in lowered for token in ("sign up to", "subscriber-only newsletter", "continued on next page")):
+        return True
+    return False
+
+
+def _style_intent_boost(question: str, metadata: dict[str, Any]) -> float:
+    meta = _metadata_text(metadata).lower()
+    layer = str(metadata.get("rag_layer") or metadata.get("chunk_type") or "").lower()
+    boost = 0.0
+    if any(token in question for token in ("complex sentence", "sentence variety", "relative clause", "non finite", "syntax")):
+        if layer == "sentence":
+            boost += 0.8
+        if any(token in meta for token in ("complex", "relative_clause", "non_finite", "concession", "argument_support")):
+            boost += 0.55
+    if any(token in question for token in ("body paragraph", "topic sentence", "explanation", "example", "wrap up")):
+        if layer in {"paragraph", "structure_template"}:
+            boost += 0.75
+        if any(token in meta for token in ("body_argument", "topic_sentence", "explanation", "example", "wrap_up")):
+            boost += 0.65
+    if any(token in question for token in ("concession", "rebuttal", "balanced", "although", "however", "despite")):
+        if any(token in meta for token in ("concession", "rebuttal", "balanced")):
+            boost += 0.8
+    if any(token in question for token in ("thesis", "introduction", "clear position")):
+        if any(token in meta for token in ("intro_hook", "topic_sentence", "statement", "balanced")):
+            boost += 0.55
+    if any(token in question for token in ("conclusion", "summary", "wrap up", "final judgement")):
+        if any(token in meta for token in ("article_conclusion", "summary", "wrap_up")):
+            boost += 0.7
+    return min(boost, 3.2)
+
+
 def _intent_boost(question: str, item: IndexedChunk) -> float:
     boost = 0.0
-    if any(token in question for token in ("band", "score", "descriptor", "criterion", "criteria")):
-        boost += 0.25 if str(item.metadata.get("register")) == "analytical" else 0.0
-        boost += 0.15 if item.doc_type == "writing" else 0.0
     if any(token in question for token in ("question", "task", "sample", "practice")):
         boost += 0.2 if str(item.metadata.get("chunk_type")) == "qa_pair" else 0.0
     if any(token in question for token in ("mistake", "wrong", "error", "review")):

@@ -7,12 +7,18 @@ long-term profile updates into SQLite.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from datetime import datetime
 from typing import Any
 
 from project.agent.state import AgentState, Message, StudyContext
-from project.memory.extractor import request_memory_extraction
+from project.agent.nodes.tracing import trace_node
+from project.memory.extractor import (
+    pop_completed_memory_extraction,
+    request_memory_extraction,
+    request_memory_extraction_async,
+)
 from project.memory.profile_service import ensure_user_profile, update_profile_fields
 
 logger = logging.getLogger(__name__)
@@ -201,6 +207,20 @@ def _update_data_collection_memory(state: AgentState, context: dict[str, Any]) -
         }
 
 
+def _apply_memory_extraction_result(
+    extraction: dict[str, Any],
+    context: dict[str, Any],
+    user_profile: dict[str, Any],
+) -> None:
+    if extraction.get("short_term_memory"):
+        context["short_term_memory"] = extraction["short_term_memory"]
+    if extraction.get("memory_watermark") is not None:
+        context["memory_watermark"] = extraction["memory_watermark"]
+    if isinstance(extraction.get("profile_updates"), dict):
+        user_profile.update(extraction["profile_updates"])
+
+
+@trace_node("memory_writer")
 def write_memory_node(state: AgentState) -> dict[str, list[Message] | StudyContext | dict[str, Any]]:
     """Append this turn to messages, refresh short-term memory, and persist profile changes."""
 
@@ -212,6 +232,12 @@ def write_memory_node(state: AgentState) -> dict[str, list[Message] | StudyConte
     total_turns = int(previous_context.get("total_turns", 0)) + 1
     profile_updates: dict[str, str] = {}
     user_profile = dict(state.get("user_profile", {}))
+    user_id = str(user_profile.get("user_id") or user_profile.get("id") or DEFAULT_USER_ID)
+    _apply_memory_extraction_result(
+        pop_completed_memory_extraction(user_id),
+        previous_context,
+        user_profile,
+    )
     try:
         profile_updates = _persist_long_term_updates(state)
         user_profile.update(profile_updates)
@@ -246,19 +272,21 @@ def write_memory_node(state: AgentState) -> dict[str, list[Message] | StudyConte
         )
 
     try:
-        extraction = request_memory_extraction(
-            user_id=str(user_profile.get("user_id") or user_profile.get("id") or DEFAULT_USER_ID),
-            messages=messages,
-            study_context=updated_context,
-        )
-        if extraction.get("short_term_memory"):
-            updated_context["short_term_memory"] = extraction["short_term_memory"]
-        if extraction.get("memory_watermark") is not None:
-            updated_context["memory_watermark"] = extraction["memory_watermark"]
-        if isinstance(extraction.get("profile_updates"), dict):
-            user_profile.update(extraction["profile_updates"])
+        if os.getenv("MEMORY_EXTRACTION_SYNC", "").lower() in {"1", "true", "yes"}:
+            extraction = request_memory_extraction(
+                user_id=user_id,
+                messages=messages,
+                study_context=updated_context,
+            )
+            _apply_memory_extraction_result(extraction, updated_context, user_profile)
+        else:
+            request_memory_extraction_async(
+                user_id=user_id,
+                messages=messages,
+                study_context=updated_context,
+            )
     except Exception as exc:  # pragma: no cover - memory extraction should not block answers
-        logger.warning("Failed to extract coalesced memory: %s", exc)
+        logger.warning("Failed to schedule background memory extraction: %s", exc)
 
     logger.info("Memory updated, total_turns=%s", total_turns)
     return {

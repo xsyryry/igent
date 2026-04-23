@@ -20,6 +20,8 @@ import requests
 from requests import Response, Session
 from requests.exceptions import ConnectTimeout, ConnectionError, HTTPError, ReadTimeout, Timeout
 
+from project.tools.cambridge_crawler_tool import ENTRY_URL as CAMBRIDGE_WRITING_ENTRY_URL
+from project.tools.cambridge_crawler_tool import crawl_writing_questions
 from project.tools.web_search_tool import search
 
 
@@ -46,7 +48,6 @@ REQUEST_HEADERS = {
 logger = logging.getLogger(__name__)
 
 CATEGORY_DIRS = {
-    "official_rubrics": "official_rubrics",
     "official_questions": "official_questions",
     "lecture_notes": "lecture_notes",
     "news_corpus": "news_corpus",
@@ -69,39 +70,6 @@ class DataSource:
 
 
 CURATED_SOURCES: tuple[DataSource, ...] = (
-    DataSource(
-        "official_rubrics",
-        "IELTS Writing band descriptors",
-        "https://cdn.ielts.org/Guides/ielts-writing-band-descriptors.pdf",
-        "official_writing_band_descriptors.pdf",
-        "IELTS",
-        "Official writing scoring descriptors.",
-        module="writing",
-        task_type="band_descriptors",
-        tags=("writing", "rubric"),
-    ),
-    DataSource(
-        "official_rubrics",
-        "IELTS Speaking band descriptors",
-        "https://ielts.org/cdn/ielts-guides/ielts-speaking-band-descriptors.pdf",
-        "official_speaking_band_descriptors.pdf",
-        "IELTS",
-        "Official speaking scoring descriptors.",
-        module="speaking",
-        task_type="band_descriptors",
-        tags=("speaking", "rubric"),
-    ),
-    DataSource(
-        "official_rubrics",
-        "IELTS writing assessment criteria",
-        "https://ielts.org/en-us/news/2023/ielts-writing-band-descriptors-and-key-assessment-criteria",
-        "official_writing_assessment_criteria.md",
-        "IELTS",
-        "Official explanation page for writing assessment criteria.",
-        module="writing",
-        task_type="assessment_criteria",
-        tags=("writing", "rubric"),
-    ),
     DataSource(
         "official_questions",
         "British Council free IELTS practice tests",
@@ -235,6 +203,38 @@ class _TextExtractor(HTMLParser):
 
     def text(self) -> str:
         return re.sub(r"\n{3,}", "\n\n", "\n".join(self.parts)).strip()
+
+
+def collect_cambridge_writing_questions(
+    *,
+    max_pages: int = 80,
+    task_no: int | None = None,
+    cambridge_book: int | None = None,
+    part_no: int | None = None,
+    entry_url: str = CAMBRIDGE_WRITING_ENTRY_URL,
+    save_json: bool = True,
+    download_images: bool = True,
+    verify_ssl: bool = True,
+    use_local_entry: bool = False,
+    use_env_proxy: bool = True,
+) -> dict[str, Any]:
+    """Operator-only Cambridge writing collection with explicit parameters."""
+
+    result = crawl_writing_questions(
+        entry_url=entry_url,
+        max_pages=max_pages,
+        task_no=task_no,
+        cambridge_book=cambridge_book,
+        part_no=part_no,
+        save_json=save_json,
+        download_images=download_images,
+        verify_ssl=verify_ssl,
+        use_local_entry=use_local_entry,
+        use_env_proxy=use_env_proxy,
+    )
+    result["skill"] = "data_collection_cambridge_writing"
+    result["collection_mode"] = "operator_explicit_params"
+    return result
 
 
 def collect_data(user_input: str, *, category: str | None = None, limit: int = 4) -> dict[str, Any]:
@@ -496,8 +496,6 @@ def _build_standard_record(
     }
     if source.category == "official_questions":
         return _question_record(base, source, text, is_pdf=is_pdf)
-    if source.category == "official_rubrics":
-        return {**base, "rubric_text": text, "raw_format": "pdf" if is_pdf else "html"}
     return {**base, "content": text, "raw_format": "pdf" if is_pdf else "html"}
 
 
@@ -529,7 +527,6 @@ def _question_record(base: dict[str, Any], source: DataSource, text: str, *, is_
             "topic_tags": list(source.tags),
             "word_limit": 250 if source.task_type == "task2" else 150,
             "sample_answer": None,
-            "band_descriptors_refs": [],
             "raw_text_excerpt": text[:1000] if not prompt else "",
         }
     if module == "speaking":
@@ -593,22 +590,20 @@ def _infer_categories(user_input: str, category: str | None) -> list[str]:
         return [category]
     text = user_input.lower()
     categories: list[str] = []
-    if any(token in user_input for token in ("评分标准", "评分", "band descriptor")) or "rubric" in text:
-        categories.append("official_rubrics")
-    if any(token in user_input for token in ("样题", "真题", "练习题", "题目")) or "sample" in text or "practice" in text:
+    if any(token in text for token in ("sample", "practice", "question", "past paper")) or any(token in user_input for token in ("样题", "真题", "练习题", "题目")):
         categories.append("official_questions")
-    if any(token in user_input for token in ("讲义", "教学", "备考资料")) or "lecture" in text or "notes" in text:
+    if any(token in text for token in ("lecture", "notes", "lesson")) or any(token in user_input for token in ("讲义", "教学", "备考资料")):
         categories.append("lecture_notes")
-    if any(token in user_input for token in ("外刊", "语料", "阅读素材")) or "news" in text or "corpus" in text:
+    if any(token in text for token in ("news", "corpus", "magazine")) or any(token in user_input for token in ("外刊", "语料", "阅读素材")):
         categories.append("news_corpus")
-    if any(token in user_input for token in ("知识库", "rag", "资料库", "全部", "数据")):
+    if any(token in text for token in ("rag", "corpus", "all")) or any(token in user_input for token in ("知识库", "资料库", "全部", "数据")):
         categories = list(CATEGORY_DIRS)
     request_profile = _extract_request_profile(user_input)
     if request_profile.get("task_type") and "official_questions" not in categories:
         categories.append("official_questions")
-    if request_profile.get("task_type") and "official_questions" in categories and "rubric" not in text:
+    if request_profile.get("task_type") and "official_questions" in categories:
         categories = [item for item in categories if item == "official_questions"]
-    return categories or ["official_rubrics", "official_questions"]
+    return categories or ["official_questions"]
 
 
 def _extract_request_profile(user_input: str) -> dict[str, str | None]:
@@ -755,7 +750,6 @@ def _ensure_data_dirs() -> None:
         RAW_DIR,
         EXPORT_DIR,
         MANIFEST_PATH.parent,
-        DATA_ROOT / "official_rubrics",
         DATA_ROOT / "lecture_notes",
         DATA_ROOT / "news_corpus",
         DATA_ROOT / "official_questions" / "reading",
@@ -1190,8 +1184,6 @@ def _record_to_text(record: dict[str, Any]) -> str:
         lines.append(json.dumps(record.get("parts", {}), ensure_ascii=False, indent=2))
     elif "content" in record:
         lines.append(str(record.get("content", "")))
-    elif "rubric_text" in record:
-        lines.append(str(record.get("rubric_text", "")))
     else:
         lines.append(json.dumps(record, ensure_ascii=False, indent=2))
     return "\n".join(lines)
@@ -1211,30 +1203,10 @@ def _set_name(source: DataSource, year: int | None, month: int | None) -> str:
 
 
 def _extract_request_date(user_input: str) -> dict[str, int | None]:
-    year_match = re.search(r"(20\d{2})", user_input)
-    month_match = re.search(r"(?:20\d{2}\s*年)?\s*(1[0-2]|0?[1-9])\s*月", user_input)
-    return {
-        "year": int(year_match.group(1)) if year_match else None,
-        "month": int(month_match.group(1)) if month_match else None,
-    }
-
-
-def _extract_request_date(user_input: str) -> dict[str, int | None]:
-    """Extract year/month from user wording such as 2025年12月."""
-
-    year_match = re.search(r"(20\d{2})", user_input)
-    month_match = re.search(r"(?:20\d{2}\s*年)?\s*(1[0-2]|0?[1-9])\s*月", user_input)
-    return {
-        "year": int(year_match.group(1)) if year_match else None,
-        "month": int(month_match.group(1)) if month_match else None,
-    }
-
-
-def _extract_request_date(user_input: str) -> dict[str, int | None]:
-    """Extract year/month from user wording such as 2025年12月 or 25年12月."""
+    """Extract year/month from user wording."""
 
     year_match = re.search(r"(20\d{2}|(?<!\d)\d{2}(?=年))", user_input)
-    month_match = re.search(r"(?:20?\d{2}\s*年)?\s*(1[0-2]|0?[1-9])\s*月", user_input)
+    month_match = re.search(r"(?:20?\d{2}\s*年?\s*)?(1[0-2]|0?[1-9])\s*(?:月|month)", user_input, flags=re.IGNORECASE)
     year = int(year_match.group(1)) if year_match else None
     if year is not None and year < 100:
         year += 2000

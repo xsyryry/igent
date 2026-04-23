@@ -99,21 +99,35 @@ def update_profile_fields(
 
 
 def _record_core_memory_changes(user_id: str, before: dict[str, Any], after: dict[str, Any]) -> None:
-    tracked_fields = ("target_score", "exam_date", "weak_skills", "preferences")
-    for field_name in tracked_fields:
+    for field_name in ("target_score", "exam_date", "weak_skills"):
         if before.get(field_name) == after.get(field_name):
             continue
-        try:
-            save_memory_event(
-                user_id=user_id,
-                memory_type="core_memory",
-                field_name=field_name,
-                old_value=before.get(field_name),
-                new_value=after.get(field_name),
-                confidence=0.85,
-            )
-        except Exception:
+        _safe_record_change(user_id, field_name, before.get(field_name), after.get(field_name))
+
+    before_preferences = before.get("preferences", {}) if isinstance(before.get("preferences"), dict) else {}
+    after_preferences = after.get("preferences", {}) if isinstance(after.get("preferences"), dict) else {}
+    for field_name in sorted(set(before_preferences) | set(after_preferences)):
+        if field_name == "memory_highlights":
             continue
+        old_value = before_preferences.get(field_name)
+        new_value = after_preferences.get(field_name)
+        if old_value == new_value:
+            continue
+        _safe_record_change(user_id, field_name, old_value, new_value)
+
+
+def _safe_record_change(user_id: str, field_name: str, old_value: Any, new_value: Any) -> None:
+    try:
+        save_memory_event(
+            user_id=user_id,
+            memory_type="core_memory",
+            field_name=field_name,
+            old_value=old_value,
+            new_value=new_value,
+            confidence=0.85,
+        )
+    except Exception:
+        return
 
 
 def refresh_profile_from_mistakes(user_id: str, limit: int = 20) -> dict[str, Any]:

@@ -7,6 +7,7 @@ import logging
 import re
 
 from project.agent.state import AgentState, IntentType
+from project.agent.nodes.tracing import trace_node
 from project.llm.client import LLMClient
 from project.prompts.router_prompt import ALLOWED_INTENTS, ROUTER_SYSTEM_PROMPT, build_router_user_prompt
 from project.tools.mistake_tool import looks_like_submission_request
@@ -58,7 +59,6 @@ DATA_COLLECTION_OBJECTS = (
     "知识库",
     "资料库",
     "rag",
-    "评分标准",
     "官方样题",
     "样题",
     "真题",
@@ -74,7 +74,6 @@ DATA_COLLECTION_OBJECTS = (
     "materials",
     "sample questions",
     "practice tests",
-    "band descriptors",
 )
 
 
@@ -130,6 +129,12 @@ INTENT_KEYWORDS: dict[IntentType, tuple[str, ...]] = {
         "一道作文",
         "task 2 题目",
         "task 2 练习",
+        "writing task 2 prompt",
+        "ielts writing task 2 prompt",
+        "writing prompt",
+        "give me one ielts writing",
+        "give me a writing task",
+        "give me one writing task",
         "帮我批改作文",
         "批改作文",
         "essay feedback",
@@ -148,7 +153,6 @@ INTENT_KEYWORDS: dict[IntentType, tuple[str, ...]] = {
         "外刊文章",
         "雅思讲义资料",
         "官方样题",
-        "官方评分标准",
         "collect data",
         "download materials",
         "prepare rag data",
@@ -268,6 +272,7 @@ def _normalize_intent_label(value: object) -> IntentType | None:
     return None
 
 
+@trace_node("router")
 def route_node(state: AgentState) -> dict[str, IntentType]:
     """LangGraph node entry for routing."""
 

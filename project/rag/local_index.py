@@ -25,7 +25,7 @@ from project.rag.simple_rag import (
 )
 
 INDEX_VERSION = 1
-CHUNKER_VERSION = 2
+CHUNKER_VERSION = 3
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "awesome-english-ebooks"
 DEFAULT_INDEX_DIR = Path(__file__).resolve().parents[2] / "data" / "rag_index"
 MANIFEST_PATH = DEFAULT_INDEX_DIR / "manifest.json"
@@ -128,7 +128,7 @@ def build_persistent_index(
                 chunk_file.write(json.dumps(record, ensure_ascii=False) + "\n")
                 chunk_count += 1
 
-                if include_sentence_chunks:
+                if include_sentence_chunks and chunk.strategy != "magazine_articles" and chunk.metadata.get("rag_layer") != "sentence":
                     for sentence_chunk in _derive_sentence_chunks(chunk):
                         sentence_record = _chunk_record(path, sentence_chunk)
                         chunk_file.write(json.dumps(sentence_record, ensure_ascii=False) + "\n")

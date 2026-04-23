@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 SUPPORTED_TEXT_SUFFIXES = {".txt", ".md", ".html", ".htm", ".pdf"}
-ALLOWED_STRATEGIES = ("auto", "llm_auto", "sliding", "headings", "qa_pairs", "rubric_items", "mistake_rules", "magazine_articles")
-STRUCTURED_STRATEGIES = {"headings", "qa_pairs", "rubric_items", "mistake_rules", "magazine_articles"}
+ALLOWED_STRATEGIES = ("auto", "llm_auto", "sliding", "headings", "qa_pairs", "mistake_rules", "magazine_articles")
+STRUCTURED_STRATEGIES = {"headings", "qa_pairs", "mistake_rules", "magazine_articles"}
 JSON_OBJECT_PATTERN = re.compile(r"\{.*\}", flags=re.DOTALL)
 SKILL_PATH = Path(__file__).resolve().parents[1] / "agent" / "skills" / "chunking_skill.md"
 
@@ -27,12 +27,11 @@ HEADING_LINE_PATTERN = re.compile(
     r"(?m)^("
     r"#{1,4}\s+.+|"
     r"(?:Part|Task|Section|Chapter)\s+\d+.*|"
-    r"[一二三四五六七八九十]+、.*|"
-    r"（[一二三四五六七八九十]+）.*|"
     r"\d+(?:\.\d+)*\s+.+"
     r")$",
     flags=re.IGNORECASE,
 )
+
 
 QA_TITLE_PATTERN = re.compile(
     r"(?mis)(^|\n)(?P<title>"
@@ -46,22 +45,6 @@ QA_TITLE_PATTERN = re.compile(
     r")|\Z)"
 )
 
-RUBRIC_ITEMS = [
-    "Task Achievement",
-    "Task Response",
-    "Coherence and Cohesion",
-    "Lexical Resource",
-    "Grammatical Range and Accuracy",
-    "Fluency and Coherence",
-    "Pronunciation",
-    "任务回应",
-    "任务完成情况",
-    "连贯与衔接",
-    "词汇资源",
-    "语法多样性与准确性",
-    "流利度与连贯性",
-    "发音",
-]
 
 MAGAZINE_SECTIONS = {
     "the world this week",
@@ -314,8 +297,6 @@ def resolve_chunk_strategy(path: Path, text: str, requested: str) -> str:
     lower_text = text.lower()
     if path.suffix.lower() == ".pdf" and "awesome-english-ebooks" in {part.lower() for part in path.parts}:
         return "magazine_articles"
-    if "band descriptor" in filename or "评分标准" in path.name:
-        return "rubric_items"
     if "真题" in path.name or "question" in filename or "task 2" in lower_text:
         return "qa_pairs"
     if "错题" in path.name or "wrong" in filename or "mistake" in filename:
@@ -367,8 +348,6 @@ def _count_heading_markers(text: str) -> int:
     patterns = (
         r"(?m)^#{1,4}\s+",
         r"(?m)^(Part|Task|Section|Chapter)\s+\d+",
-        r"(?m)^[一二三四五六七八九十]+、",
-        r"(?m)^（[一二三四五六七八九十]+）",
         r"(?m)^\d+(?:\.\d+)*\s+",
     )
     return sum(len(re.findall(pattern, text, flags=re.IGNORECASE)) for pattern in patterns)
@@ -386,7 +365,6 @@ def _chunk_text(
         "sliding": _chunk_by_sliding_window,
         "headings": _chunk_by_headings,
         "qa_pairs": _chunk_by_qa_pairs,
-        "rubric_items": _chunk_by_rubric_items,
         "mistake_rules": _chunk_by_mistake_rules,
         "magazine_articles": _chunk_by_magazine_articles,
     }
@@ -468,37 +446,10 @@ def _chunk_by_qa_pairs(path: Path, text: str, chunk_size: int, overlap: int) -> 
     return chunks
 
 
-def _chunk_by_rubric_items(path: Path, text: str, chunk_size: int, overlap: int) -> list[ChunkRecord]:
-    del chunk_size, overlap
-    title_pattern = "|".join(re.escape(item) for item in RUBRIC_ITEMS)
-    item_regex = re.compile(
-        rf"(?mis)(^|\n)(?P<title>{title_pattern})(?P<body>.*?)(?=(\n(?:{title_pattern}))|\Z)"
-    )
-    matches = list(item_regex.finditer(text))
-    if not matches:
-        return _chunk_by_headings(path, text, 1200, 150)
-
-    chunks: list[ChunkRecord] = []
-    for index, match in enumerate(matches, start=1):
-        title = match.group("title").strip()
-        body = match.group("body").strip()
-        chunks.append(
-            ChunkRecord(
-                chunk_id=f"{path.stem}-rubric-{index:03d}",
-                source_file=path.name,
-                strategy="rubric_items",
-                title=title,
-                content=body,
-                metadata={"rubric_item": title},
-            )
-        )
-    return chunks
-
-
 def _chunk_by_mistake_rules(path: Path, text: str, chunk_size: int, overlap: int) -> list[ChunkRecord]:
     del chunk_size, overlap
     rule_regex = re.compile(
-        r"(?m)^(?:[-*]\s+|\d+[.)]\s+|[一二三四五六七八九十]+、|（[一二三四五六七八九十]+）)(.+)$"
+        r"(?m)^(?:[-*]\s+|\d+[.)]\s+)(.+)$"
     )
     matches = list(rule_regex.finditer(text))
     if not matches:
@@ -613,26 +564,94 @@ def _detect_magazine_header(page_text: str, current_section: str, sections: set[
 
 
 def _split_magazine_article(path: Path, article: dict[str, Any], chunk_size: int, start_index: int) -> list[ChunkRecord]:
+    del chunk_size
     title = str(article["title"])
     section = str(article["section"] or "magazine")
-    max_chars = max(chunk_size, 900)
     chunks: list[ChunkRecord] = []
-    buffer: list[str] = []
-    buffer_pages: list[int] = []
-    index = start_index
+    article_key = f"{path.stem}-magazine-{start_index:03d}"
+    paragraph_index = 0
+    sentence_index = 0
+    template_index = 0
 
     for page_number, body in article["pages"]:
-        page_block = f"[Page {page_number}]\n{body}".strip()
-        if buffer and sum(len(part) for part in buffer) + len(page_block) > max_chars:
-            chunks.append(_magazine_chunk(path, title, section, buffer, buffer_pages, index))
-            index += 1
-            buffer = []
-            buffer_pages = []
-        buffer.append(page_block)
-        buffer_pages.append(int(page_number))
+        for paragraph in _split_magazine_paragraphs(body):
+            paragraph_index += 1
+            paragraph_profile = _paragraph_profile(paragraph)
+            paragraph_id = f"{article_key}-para-{paragraph_index:03d}"
+            chunks.append(
+                ChunkRecord(
+                    chunk_id=paragraph_id,
+                    source_file=path.name,
+                    strategy="magazine_articles",
+                    title=title,
+                    content=paragraph,
+                    metadata={
+                        "article_title": title,
+                        "section": section,
+                        "section_title": section,
+                        "page_range": str(page_number),
+                        "page_start": int(page_number),
+                        "page_end": int(page_number),
+                        "chunk_type": "paragraph",
+                        "rag_layer": "paragraph",
+                        **paragraph_profile,
+                    },
+                )
+            )
 
-    if buffer:
-        chunks.append(_magazine_chunk(path, title, section, buffer, buffer_pages, index))
+            sentences = _split_sentences(paragraph)
+            for local_index, sentence in enumerate(sentences, start=1):
+                if not _is_indexable_sentence(sentence):
+                    continue
+                sentence_index += 1
+                sentence_profile = _sentence_profile(sentence)
+                chunks.append(
+                    ChunkRecord(
+                        chunk_id=f"{article_key}-sent-{sentence_index:04d}",
+                        source_file=path.name,
+                        strategy="magazine_articles",
+                        title=f"{title} sentence {local_index}",
+                        content=sentence,
+                        metadata={
+                            "article_title": title,
+                            "section": section,
+                            "section_title": section,
+                            "page_range": str(page_number),
+                            "page_start": int(page_number),
+                            "page_end": int(page_number),
+                            "chunk_type": "sentence",
+                            "rag_layer": "sentence",
+                            "parent_chunk_id": paragraph_id,
+                            **sentence_profile,
+                        },
+                    )
+                )
+
+            template = _structure_template(paragraph, paragraph_profile)
+            if template:
+                template_index += 1
+                chunks.append(
+                    ChunkRecord(
+                        chunk_id=f"{article_key}-template-{template_index:03d}",
+                        source_file=path.name,
+                        strategy="magazine_articles",
+                        title=f"{title} structure template",
+                        content=template,
+                        metadata={
+                            "article_title": title,
+                            "section": section,
+                            "section_title": section,
+                            "page_range": str(page_number),
+                            "page_start": int(page_number),
+                            "page_end": int(page_number),
+                            "chunk_type": "structure_template",
+                            "rag_layer": "structure_template",
+                            "parent_chunk_id": paragraph_id,
+                            "abstraction_method": "heuristic_entity_topic_masking",
+                            **paragraph_profile,
+                        },
+                    )
+                )
     return chunks
 
 
@@ -655,6 +674,260 @@ def _magazine_chunk(path: Path, title: str, section: str, parts: list[str], page
             "chunk_type": "article",
         },
     )
+
+
+def _split_magazine_paragraphs(body: str) -> list[str]:
+    lines = [line for line in _clean_lines(body) if not _is_noise_line(line)]
+    paragraphs: list[str] = []
+    buffer: list[str] = []
+    for line in lines:
+        lowered = line.lower()
+        if lowered in MAGAZINE_SECTIONS or _looks_like_contents_page(line, MAGAZINE_SECTIONS):
+            continue
+        if _looks_like_magazine_title(line) and len(line.split()) <= 6:
+            continue
+        buffer.append(line)
+        joined = " ".join(buffer).strip()
+        if _ends_sentence(line) and len(joined) >= 160:
+            paragraphs.append(joined)
+            buffer = []
+        elif len(joined) >= 900:
+            paragraphs.append(joined)
+            buffer = []
+    if buffer:
+        joined = " ".join(buffer).strip()
+        if len(joined) >= 80:
+            paragraphs.append(joined)
+    return [_normalize_inline_spaces(item) for item in paragraphs if _paragraph_has_language_value(item)]
+
+
+def _paragraph_has_language_value(paragraph: str) -> bool:
+    latin_words = len(re.findall(r"\b[A-Za-z][A-Za-z'-]*\b", paragraph))
+    return latin_words >= 18 and len(paragraph) >= 100
+
+
+def _split_sentences(text: str) -> list[str]:
+    candidates = re.split(r"(?<=[.!?])\s+(?=[A-Z\"'(\[])", _normalize_inline_spaces(text))
+    sentences: list[str] = []
+    for candidate in candidates:
+        sentence = candidate.strip()
+        if sentence:
+            sentences.append(sentence)
+    return sentences
+
+
+def _is_indexable_sentence(sentence: str) -> bool:
+    word_count = len(re.findall(r"\b[A-Za-z][A-Za-z'-]*\b", sentence))
+    return 8 <= word_count <= 80 and 40 <= len(sentence) <= 520
+
+
+def _sentence_profile(sentence: str) -> dict[str, Any]:
+    words = re.findall(r"\b[A-Za-z][A-Za-z'-]*\b", sentence)
+    lowered = sentence.lower()
+    patterns: list[str] = []
+    checks = (
+        ("relative_clause", bool(re.search(r"\b(which|who|whom|whose|where|that)\b", lowered))),
+        ("concession", bool(re.search(r"\b(although|though|while|whereas|despite|however|nevertheless)\b", lowered))),
+        ("condition", bool(re.search(r"\b(if|unless|provided that|as long as)\b", lowered))),
+        ("appositive_or_insert", bool(re.search(r"\([^)]{8,}\)|[,;:]\s*(however|for example|in effect)\b", lowered))),
+        ("non_finite", bool(re.search(r"\b(to|by|after|before|without)\s+[a-z]+ing\b|,\s*[a-z]+ing\b", lowered))),
+        ("nominalization", bool(re.search(r"\b(tion|ment|ness|ity|ance|ence|ship|ism)s?\b", lowered))),
+        ("comparison", bool(re.search(r"\b(more than|less than|compared with|than|whereas)\b", lowered))),
+    )
+    for name, matched in checks:
+        if matched:
+            patterns.append(name)
+    clause_count = _clause_count(lowered)
+    return {
+        "original_sentence": sentence,
+        "sentence_length": len(sentence),
+        "sentence_word_count": len(words),
+        "clause_count": clause_count,
+        "sentence_type": "complex" if clause_count >= 2 or len(patterns) >= 2 else "compound" if ";" in sentence or " and " in lowered else "simple",
+        "patterns": patterns,
+        "has_concession": "concession" in patterns,
+        "has_condition": "condition" in patterns,
+        "has_relative_clause": "relative_clause" in patterns,
+        "has_insert": "appositive_or_insert" in patterns,
+        "has_non_finite": "non_finite" in patterns,
+        "sentence_function": _sentence_function(lowered),
+        "function": _sentence_function(lowered),
+        "difficulty": _sentence_difficulty(len(words), clause_count, patterns),
+    }
+
+
+def _paragraph_profile(paragraph: str) -> dict[str, Any]:
+    sentences = _split_sentences(paragraph)
+    profiles = [_sentence_profile(sentence) for sentence in sentences if _is_indexable_sentence(sentence)]
+    roles = [_sentence_function(sentence.lower()) for sentence in sentences]
+    structure = _structure_pattern(roles)
+    complexity_score = sum(1 for item in profiles if item.get("difficulty") in {"medium_high", "high"})
+    return {
+        "paragraph_role": _paragraph_role(roles, paragraph),
+        "structure_pattern": structure,
+        "argument_style": _argument_style(paragraph),
+        "sentence_complexity": _paragraph_complexity(len(profiles), complexity_score),
+        "sentence_count": len(sentences),
+        "avg_sentence_words": round(
+            sum(int(item.get("sentence_word_count") or 0) for item in profiles) / max(len(profiles), 1),
+            1,
+        ),
+        "dominant_sentence_functions": _top_ordered(roles, 4),
+    }
+
+
+def _structure_template(paragraph: str, profile: dict[str, Any]) -> str:
+    sentences = _split_sentences(paragraph)
+    if len(sentences) < 2 or len(paragraph) < 220:
+        return ""
+    templates = []
+    for sentence in sentences[:5]:
+        masked = _mask_sentence_semantics(sentence)
+        if masked:
+            templates.append(masked)
+    if len(templates) < 2:
+        return ""
+    header = (
+        f"Paragraph role: {profile.get('paragraph_role')}; "
+        f"structure: {profile.get('structure_pattern')}; "
+        f"argument_style: {profile.get('argument_style')}."
+    )
+    return header + "\n" + "\n".join(templates)
+
+
+def _mask_sentence_semantics(sentence: str) -> str:
+    text = sentence
+    discourse_markers = {
+        "First", "Second", "Third", "Moreover", "Furthermore", "However",
+        "Therefore", "Nevertheless", "Meanwhile", "Overall",
+    }
+    text = re.sub(
+        r"\b[A-Z][A-Za-z0-9&'-]*(?:\s+[A-Z][A-Za-z0-9&'-]*){0,3}\b",
+        lambda match: match.group(0) if match.group(0) in discourse_markers else "[Entity]",
+        text,
+    )
+    text = re.sub(r"\b\d+(?:[.,]\d+)?%?\b", "[Number]", text)
+    text = re.sub(r"\b(?:country|countries|government|company|companies|market|markets|people|children|students|technology|economy|education|health|trade)\b", "[Issue]", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b(?:because|therefore|however|although|while|whereas|for example|for instance|as a result|in other words)\b", lambda m: m.group(0).lower(), text, flags=re.IGNORECASE)
+    return _normalize_inline_spaces(text)
+
+
+def _clause_count(lowered: str) -> int:
+    markers = re.findall(r"\b(because|although|though|while|whereas|if|unless|which|who|whom|whose|where|that|when|as|since)\b", lowered)
+    punctuation = len(re.findall(r"[,;:]", lowered))
+    return max(1, 1 + len(markers) + min(punctuation, 2))
+
+
+def _sentence_function(lowered: str) -> str:
+    if re.search(r"\b(for example|for instance|such as)\b", lowered):
+        return "example"
+    if re.search(r"\b(although|though|while|whereas|despite|however|nevertheless)\b", lowered):
+        return "concession"
+    if re.search(r"\b(because|therefore|as a result|so that|lead to|means that)\b", lowered):
+        return "argument_support"
+    if re.search(r"\b(first|second|moreover|furthermore|also|another)\b", lowered):
+        return "development"
+    if re.search(r"\b(in conclusion|overall|to sum up|in short)\b", lowered):
+        return "summary"
+    if re.search(r"\b(is|are|means|refers to|defined as)\b", lowered):
+        return "definition"
+    return "statement"
+
+
+def _sentence_difficulty(word_count: int, clause_count: int, patterns: list[str]) -> str:
+    score = 0
+    if word_count >= 28:
+        score += 1
+    if clause_count >= 3:
+        score += 2
+    elif clause_count == 2:
+        score += 1
+    if len(patterns) >= 3:
+        score += 2
+    elif len(patterns) >= 1:
+        score += 1
+    if score >= 4:
+        return "high"
+    if score >= 3:
+        return "medium_high"
+    if score >= 1:
+        return "medium"
+    return "low"
+
+
+def _paragraph_role(roles: list[str], paragraph: str) -> str:
+    lowered = paragraph.lower()
+    if roles[:1] == ["summary"] or "in conclusion" in lowered:
+        return "article_conclusion"
+    if "?" in paragraph[:160]:
+        return "intro_hook"
+    if "however" in lowered or "although" in lowered or "despite" in lowered:
+        return "concession_rebuttal"
+    if "for example" in lowered or "for instance" in lowered:
+        return "body_argument_example"
+    if any(role == "argument_support" for role in roles):
+        return "body_argument"
+    if roles and roles[0] in {"definition", "statement"}:
+        return "topic_sentence_development"
+    return "explanation"
+
+
+def _structure_pattern(roles: list[str]) -> str:
+    mapped = []
+    for role in roles[:6]:
+        if role == "statement":
+            mapped.append("topic_sentence" if not mapped else "explanation")
+        elif role == "argument_support":
+            mapped.append("explanation")
+        elif role == "summary":
+            mapped.append("wrap_up")
+        else:
+            mapped.append(role)
+    return " -> ".join(mapped) if mapped else "unknown"
+
+
+def _argument_style(paragraph: str) -> str:
+    lowered = paragraph.lower()
+    if any(token in lowered for token in ("however", "although", "on the other hand", "whereas", "despite")):
+        return "balanced"
+    if any(token in lowered for token in ("because", "therefore", "as a result", "lead to")):
+        return "cause_effect"
+    if any(token in lowered for token in ("for example", "for instance", "such as")):
+        return "example_driven"
+    if any(token in lowered for token in ("more than", "less than", "compared with")):
+        return "comparison"
+    return "expository"
+
+
+def _paragraph_complexity(profile_count: int, complex_count: int) -> str:
+    if profile_count <= 0:
+        return "unknown"
+    ratio = complex_count / profile_count
+    if ratio >= 0.55:
+        return "high"
+    if ratio >= 0.35:
+        return "medium_high"
+    if ratio >= 0.15:
+        return "medium"
+    return "low"
+
+
+def _top_ordered(values: list[str], limit: int) -> list[str]:
+    seen: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.append(value)
+        if len(seen) >= limit:
+            break
+    return seen
+
+
+def _ends_sentence(line: str) -> bool:
+    return bool(re.search(r"[.!?]['\")\]]?$", line.strip()))
+
+
+def _normalize_inline_spaces(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _clean_lines(text: str) -> list[str]:
@@ -711,7 +984,7 @@ def _load_skill_prompt() -> str:
     if not SKILL_PATH.exists():
         return (
             "You are a chunking planner. Return JSON only with strategy, chunk_size, overlap, and reason. "
-            "Allowed strategies: sliding, headings, qa_pairs, rubric_items, mistake_rules, magazine_articles."
+            "Allowed strategies: sliding, headings, qa_pairs, mistake_rules, magazine_articles."
         )
     return SKILL_PATH.read_text(encoding="utf-8")
 
@@ -738,7 +1011,7 @@ def _build_chunking_user_prompt(
         "Return one JSON object only. Do not add markdown, explanation, or code fences. "
         "If uncertain, still return valid JSON with one allowed strategy.\n"
         "Schema: "
-        '{"strategy": "sliding|headings|qa_pairs|rubric_items|mistake_rules|magazine_articles", '
+        '{"strategy": "sliding|headings|qa_pairs|mistake_rules|magazine_articles", '
         '"chunk_size": 1200, "overlap": 120, "reason": "..."}'
     )
 
@@ -746,9 +1019,9 @@ def _build_chunking_user_prompt(
 def _build_chunking_repair_prompt(raw_response: str) -> str:
     return (
         "Rewrite the following chunk-plan answer into valid JSON only.\n"
-        "Allowed strategies: sliding, headings, qa_pairs, rubric_items, mistake_rules, magazine_articles.\n"
+        "Allowed strategies: sliding, headings, qa_pairs, mistake_rules, magazine_articles.\n"
         "Schema: "
-        '{"strategy": "sliding|headings|qa_pairs|rubric_items|mistake_rules|magazine_articles", '
+        '{"strategy": "sliding|headings|qa_pairs|mistake_rules|magazine_articles", '
         '"chunk_size": 1200, "overlap": 120, "reason": "..."}\n\n'
         "Original answer:\n"
         f"{raw_response}\n"
@@ -826,11 +1099,6 @@ def _apply_strategy_guardrails(
     filename = path.name.lower()
     lowered_text = text.lower()
 
-    if "band descriptor" in filename or "assessment-criteria" in filename:
-        allowed = {"rubric_items", "headings"}
-        if chosen_strategy not in allowed:
-            return heuristic_strategy if heuristic_strategy in allowed else "rubric_items"
-
     if any(marker in filename for marker in ("sample", "practice", "question")) or "listening and speaking tests are the same" in lowered_text:
         if chosen_strategy == "mistake_rules":
             return "qa_pairs"
@@ -845,12 +1113,10 @@ def _apply_strategy_guardrails(
 def _summarize_structure_features(text: str) -> str:
     heading_count = _count_heading_markers(text)
     qa_count = len(QA_TITLE_PATTERN.findall(text))
-    rubric_count = sum(1 for item in RUBRIC_ITEMS if item.lower() in text.lower())
     line_count = len(text.splitlines())
     return (
         f"headings={heading_count}, "
         f"qa_markers={qa_count}, "
-        f"rubric_terms={rubric_count}, "
         f"lines={line_count}"
     )
 
@@ -870,3 +1136,4 @@ def _safe_int(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+

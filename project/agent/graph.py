@@ -16,17 +16,24 @@ except ModuleNotFoundError:  # pragma: no cover - exercised only in minimal envs
     StateGraph = None
 
 from project.agent.nodes.context_builder import build_context_node
+from project.agent.nodes.data_agent import data_agent_node
 from project.agent.nodes.generator import generate_node
 from project.agent.nodes.memory_writer import write_memory_node
-from project.agent.nodes.planner import plan_node
+from project.agent.nodes.runtime_metrics import metrics_finalize_node, metrics_init_node
+from project.agent.nodes.react_loop import (
+    action_selector_node,
+    observation_compressor_node,
+    react_control_node,
+    react_init_node,
+    reason_node,
+    route_after_action_selection,
+    route_after_react_control,
+    should_run_react,
+)
 from project.agent.nodes.router import route_node
 from project.agent.nodes.tool_executor import execute_tools_node
-from project.agent.nodes.writing_react import (
-    finalize_writing_review_node,
-    is_writing_review_active,
-    should_continue_writing_retrieval,
-    writing_retrieval_node,
-)
+from project.agent.nodes.writing_agent import writing_agent_node
+from project.agent.checkpointing import build_checkpointer
 from project.agent.state import AgentState
 
 
@@ -39,78 +46,105 @@ class _SequentialGraph:
     def __init__(self, nodes: list[NodeFn]) -> None:
         self._nodes = nodes
 
-    def invoke(self, state: AgentState) -> AgentState:
+    def invoke(self, state: AgentState, config: dict[str, Any] | None = None) -> AgentState:
+        del config
         current_state: AgentState = dict(state)
-        for index, node in enumerate(self._nodes):
-            updates = node(current_state)
-            current_state.update(updates)
-            if index == 2 and is_writing_review_active(current_state):
-                while should_continue_writing_retrieval(current_state):
-                    current_state.update(writing_retrieval_node(current_state))
-                current_state.update(finalize_writing_review_node(current_state))
+        current_state.update(metrics_init_node(current_state))
+        current_state.update(route_node(current_state))
+        current_state.update(react_init_node(current_state))
+        while current_state.get("react_should_continue"):
+            current_state.update(reason_node(current_state))
+            current_state.update(action_selector_node(current_state))
+            if current_state.get("selected_tool_call"):
+                route = route_after_action_selection(current_state)
+                routes = route if isinstance(route, list) else [route]
+                if "writing_agent" in routes:
+                    current_state.update(writing_agent_node(current_state))
+                if "data_agent" in routes:
+                    current_state.update(data_agent_node(current_state))
+                if "tool_executor" in routes:
+                    current_state.update(execute_tools_node(current_state))
+                current_state.update(observation_compressor_node(current_state))
+            current_state.update(react_control_node(current_state))
+        for node in self._nodes:
+            current_state.update(node(current_state))
+        current_state.update(metrics_finalize_node(current_state))
+        current_state.update(write_memory_node(current_state))
         return current_state
 
 
-def _route_after_tool_executor(state: AgentState) -> str:
-    if is_writing_review_active(state):
-        return "writing_retrieval"
-    return "context_builder"
+_AUTO_CHECKPOINTER = object()
 
 
-def _route_after_writing_retrieval(state: AgentState) -> str:
-    if should_continue_writing_retrieval(state):
-        return "writing_retrieval"
-    return "writing_finalize"
-
-
-def build_graph():
-    """Build and compile the phase-one LangGraph workflow."""
+def build_graph(*, checkpointer: Any = _AUTO_CHECKPOINTER):
+    """Build and compile the ReAct workflow."""
 
     if StateGraph is None:
         return _SequentialGraph(
             [
-                route_node,
-                plan_node,
-                execute_tools_node,
                 build_context_node,
                 generate_node,
-                write_memory_node,
             ]
         )
 
     graph_builder = StateGraph(AgentState)
 
+    graph_builder.add_node("metrics_init", metrics_init_node)
     graph_builder.add_node("router", route_node)
-    graph_builder.add_node("planner", plan_node)
+    graph_builder.add_node("react_init", react_init_node)
+    graph_builder.add_node("reason", reason_node)
+    graph_builder.add_node("action_selector", action_selector_node)
+    graph_builder.add_node("writing_agent", writing_agent_node)
+    graph_builder.add_node("data_agent", data_agent_node)
     graph_builder.add_node("tool_executor", execute_tools_node)
-    graph_builder.add_node("writing_retrieval", writing_retrieval_node)
-    graph_builder.add_node("writing_finalize", finalize_writing_review_node)
+    graph_builder.add_node("observation_compressor", observation_compressor_node)
+    graph_builder.add_node("react_control", react_control_node)
     graph_builder.add_node("context_builder", build_context_node)
     graph_builder.add_node("generator", generate_node)
+    graph_builder.add_node("metrics_finalize", metrics_finalize_node)
     graph_builder.add_node("memory_writer", write_memory_node)
 
-    graph_builder.add_edge(START, "router")
-    graph_builder.add_edge("router", "planner")
-    graph_builder.add_edge("planner", "tool_executor")
+    graph_builder.add_edge(START, "metrics_init")
+    graph_builder.add_edge("metrics_init", "router")
+    graph_builder.add_edge("router", "react_init")
     graph_builder.add_conditional_edges(
-        "tool_executor",
-        _route_after_tool_executor,
+        "react_init",
+        should_run_react,
         {
-            "writing_retrieval": "writing_retrieval",
+            "reason": "reason",
             "context_builder": "context_builder",
         },
     )
+    graph_builder.add_edge("reason", "action_selector")
     graph_builder.add_conditional_edges(
-        "writing_retrieval",
-        _route_after_writing_retrieval,
+        "action_selector",
+        route_after_action_selection,
         {
-            "writing_retrieval": "writing_retrieval",
-            "writing_finalize": "writing_finalize",
+            "writing_agent": "writing_agent",
+            "data_agent": "data_agent",
+            "tool_executor": "tool_executor",
+            "react_control": "react_control",
         },
     )
-    graph_builder.add_edge("writing_finalize", "context_builder")
+    graph_builder.add_edge("writing_agent", "observation_compressor")
+    graph_builder.add_edge("data_agent", "observation_compressor")
+    graph_builder.add_edge("tool_executor", "observation_compressor")
+    graph_builder.add_edge("observation_compressor", "react_control")
+    graph_builder.add_conditional_edges(
+        "react_control",
+        route_after_react_control,
+        {
+            "reason": "reason",
+            "context_builder": "context_builder",
+        },
+    )
     graph_builder.add_edge("context_builder", "generator")
-    graph_builder.add_edge("generator", "memory_writer")
+    graph_builder.add_edge("generator", "metrics_finalize")
+    graph_builder.add_edge("metrics_finalize", "memory_writer")
     graph_builder.add_edge("memory_writer", END)
 
-    return graph_builder.compile()
+    effective_checkpointer = build_checkpointer() if checkpointer is _AUTO_CHECKPOINTER else checkpointer
+    compile_kwargs: dict[str, Any] = {}
+    if effective_checkpointer is not None:
+        compile_kwargs["checkpointer"] = effective_checkpointer
+    return graph_builder.compile(**compile_kwargs)

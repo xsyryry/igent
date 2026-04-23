@@ -16,10 +16,6 @@ SECTION_TO_KEY = {
 }
 
 OFFICIAL_TIER1_NAMES = {
-    "ielts-writing-band-descriptors.pdf",
-    "ielts-speaking-band-descriptors.pdf",
-    "writing-band-descriptors-task-1.pdf",
-    "ielts-writing-band-descriptors-and-key-assessment-criteria.html",
     "ielts-academic-format-reading.html",
     "academic-test-sample-questions.html",
 }

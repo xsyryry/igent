@@ -11,10 +11,10 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
+from project.tools.question_bank_paths import CAMBRIDGE_EXPORT_DIR, CAMBRIDGE_RECORD_DIR
 
-DATA_ROOT = Path(__file__).resolve().parents[2] / "data"
-QUESTION_DIR = DATA_ROOT / "questions" / "writing"
-EXPORT_DIR = DATA_ROOT / "exports"
+QUESTION_DIR = CAMBRIDGE_RECORD_DIR
+EXPORT_DIR = CAMBRIDGE_EXPORT_DIR
 DEFAULT_COUNT = 5
 PAGE_SIZE = (1240, 1754)  # A4 at roughly 150 DPI.
 MARGIN = 90
@@ -164,7 +164,7 @@ def _load_question_records() -> tuple[list[dict[str, Any]], list[str]]:
 
     for path in sorted(QUESTION_DIR.glob("*.json")):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            data = json.loads(path.read_text(encoding="utf-8-sig"))
         except Exception:
             failures.append(str(path))
             continue

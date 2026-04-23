@@ -30,7 +30,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--index-dir", type=Path, default=DEFAULT_INDEX_DIR, help=f"Default: {DEFAULT_INDEX_DIR}")
     parser.add_argument(
         "--strategy",
-        choices=("auto", "llm_auto", "sliding", "headings", "qa_pairs", "rubric_items", "mistake_rules", "magazine_articles"),
+        choices=("auto", "llm_auto", "sliding", "headings", "qa_pairs", "mistake_rules", "magazine_articles"),
         default="auto",
         help="Chunking strategy for index build.",
     )
